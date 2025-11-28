@@ -10,9 +10,10 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
-  first_name TEXT,
+  full_name TEXT,
   age INTEGER CHECK (age > 0 AND age < 150),
   weight NUMERIC CHECK (weight > 0),
+  height NUMERIC CHECK (height > 0),
   gender TEXT CHECK (gender IN ('male', 'female', 'other')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
