@@ -141,7 +141,7 @@ export default function ZonesPage() {
       if (metricError) throw metricError;
 
       // Calculer et sauvegarder les zones
-      const zones = type === "vma" ? vmaZones : type === "ftp" ? ftpZones : cssZones;
+      const zones = type === "vma" ? vmaZones : (type === "ftp" || type === "pc") ? ftpZones : cssZones;
       const baseValue = parseFloat(value);
 
       const zonesToSave = zones.map((zone) => ({
