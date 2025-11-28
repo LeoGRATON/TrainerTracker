@@ -13,6 +13,7 @@ import {
   LogOut,
   Activity,
   Dumbbell,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -85,6 +86,7 @@ export default function DashboardLayout({
     { name: "Zones", href: "/dashboard/zones", icon: Target },
     { name: "Séances", href: "/dashboard/workouts", icon: Dumbbell },
     { name: "Calendrier", href: "/dashboard/calendar", icon: Calendar },
+    { name: "Plans", href: "/dashboard/plans", icon: BookOpen },
     { name: "Activités", href: "/dashboard/activities", icon: Activity },
     { name: "Profil", href: "/dashboard/profile", icon: UserIcon },
   ];
