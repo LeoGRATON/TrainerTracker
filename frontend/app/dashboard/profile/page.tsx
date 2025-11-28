@@ -66,6 +66,21 @@ export default function ProfilePage() {
 
       if (!session) throw new Error("Non connecté");
 
+      // Validation des données
+      const age = profile.age ? parseInt(profile.age) : null;
+      const weight = profile.weight ? parseFloat(profile.weight) : null;
+      const height = profile.height ? parseFloat(profile.height) : null;
+
+      if (age !== null && (age <= 0 || age >= 150)) {
+        throw new Error("L'âge doit être entre 1 et 149 ans");
+      }
+      if (weight !== null && weight <= 0) {
+        throw new Error("Le poids doit être supérieur à 0");
+      }
+      if (height !== null && height <= 0) {
+        throw new Error("La taille doit être supérieure à 0");
+      }
+
       // Mettre à jour les métadonnées de l'utilisateur
       const { error: authError } = await supabase.auth.updateUser({
         data: {
@@ -82,9 +97,9 @@ export default function ProfilePage() {
           id: session.user.id,
           email: session.user.email,
           full_name: profile.full_name,
-          age: profile.age ? parseInt(profile.age) : null,
-          weight: profile.weight ? parseFloat(profile.weight) : null,
-          height: profile.height ? parseFloat(profile.height) : null,
+          age,
+          weight,
+          height,
           updated_at: new Date().toISOString(),
         });
 
@@ -95,9 +110,10 @@ export default function ProfilePage() {
         description: "Vos informations ont été sauvegardées avec succès.",
       });
     } catch (error: any) {
+      console.error("Erreur lors de la mise à jour du profil:", error);
       toast({
         title: "Erreur",
-        description: error.message,
+        description: error.message || "Une erreur est survenue lors de la mise à jour",
         variant: "destructive",
       });
     } finally {

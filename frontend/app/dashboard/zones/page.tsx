@@ -32,7 +32,7 @@ const vmaZones: Zone[] = [
 ];
 
 const ftpZones: Zone[] = [
-  { number: 1, name: "Récupération", percentage: [0, 55], color: "bg-blue-500" },
+  { number: 1, name: "Récupération", percentage: [1, 55], color: "bg-blue-500" },
   { number: 2, name: "Endurance", percentage: [56, 75], color: "bg-green-500" },
   { number: 3, name: "Tempo", percentage: [76, 90], color: "bg-yellow-500" },
   { number: 4, name: "Seuil", percentage: [91, 105], color: "bg-orange-500" },
@@ -176,9 +176,10 @@ export default function ZonesPage() {
       if (type === "ftp") setFtpCalculated(true);
       if (type === "css") setCssCalculated(true);
     } catch (error: any) {
+      console.error("Erreur lors de la sauvegarde:", error);
       toast({
         title: "Erreur",
-        description: error.message,
+        description: error.message || "Une erreur est survenue lors de la sauvegarde",
         variant: "destructive",
       });
     }
