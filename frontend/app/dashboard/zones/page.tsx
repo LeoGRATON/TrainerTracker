@@ -48,11 +48,11 @@ const ftpZones: Zone[] = [
 ];
 
 const cssZones: Zone[] = [
-  { number: 1, name: "Récupération", percentage: [140, 160], color: "bg-blue-500" },
-  { number: 2, name: "Endurance", percentage: [120, 140], color: "bg-green-500" },
-  { number: 3, name: "Tempo", percentage: [110, 120], color: "bg-yellow-500" },
-  { number: 4, name: "Seuil", percentage: [105, 110], color: "bg-orange-500" },
-  { number: 5, name: "Vitesse", percentage: [95, 105], color: "bg-red-500" },
+  { number: 1, name: "Récupération", percentage: [115, 125], color: "bg-blue-500" },
+  { number: 2, name: "Endurance", percentage: [105, 115], color: "bg-green-500" },
+  { number: 3, name: "Tempo", percentage: [100, 105], color: "bg-yellow-500" },
+  { number: 4, name: "Seuil", percentage: [95, 100], color: "bg-orange-500" },
+  { number: 5, name: "Vitesse", percentage: [85, 95], color: "bg-red-500" },
 ];
 
 export default function ZonesPage() {
@@ -148,7 +148,16 @@ export default function ZonesPage() {
       const metricTypeForDB = type === "pc" ? "ftp" : type;
 
       // Sauvegarder la métrique
-      const { error: metricError } = await supabase.from("metrics").insert({
+      console.log("Tentative de sauvegarde métrique:", {
+        user_id: userId,
+        metric_type: metricTypeForDB,
+        value: parseFloat(value),
+        discipline,
+        unit,
+        test_date: new Date().toISOString().split('T')[0],
+      });
+
+      const { data: metricData, error: metricError } = await supabase.from("metrics").insert({
         user_id: userId,
         metric_type: metricTypeForDB,
         value: parseFloat(value),
@@ -157,7 +166,12 @@ export default function ZonesPage() {
         test_date: new Date().toISOString().split('T')[0], // Date du jour au format YYYY-MM-DD
       });
 
-      if (metricError) throw metricError;
+      if (metricError) {
+        console.error("Erreur insertion métrique:", metricError);
+        throw metricError;
+      }
+
+      console.log("Métrique sauvegardée avec succès");
 
       // Calculer et sauvegarder les zones
       let zones = vmaZones;
@@ -187,13 +201,23 @@ export default function ZonesPage() {
         .eq("user_id", userId)
         .eq("discipline", discipline);
 
-      if (zonesError) throw zonesError;
+      if (zonesError) {
+        console.error("Erreur suppression zones:", zonesError);
+        throw zonesError;
+      }
 
-      const { error: insertError } = await supabase
+      console.log("Anciennes zones supprimées");
+
+      const { data: insertData, error: insertError } = await supabase
         .from("zones")
         .insert(zonesToSave);
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error("Erreur insertion zones:", insertError);
+        throw insertError;
+      }
+
+      console.log("Zones insérées avec succès");
 
       toast({
         title: "Zones calculées !",
