@@ -40,11 +40,11 @@ const ftpZones: Zone[] = [
 ];
 
 const cssZones: Zone[] = [
-  { number: 1, name: "Récupération", percentage: [60, 70], color: "bg-blue-500" },
-  { number: 2, name: "Endurance", percentage: [71, 80], color: "bg-green-500" },
-  { number: 3, name: "Tempo", percentage: [81, 90], color: "bg-yellow-500" },
-  { number: 4, name: "Seuil", percentage: [91, 95], color: "bg-orange-500" },
-  { number: 5, name: "Vitesse", percentage: [96, 100], color: "bg-red-500" },
+  { number: 1, name: "Récupération", percentage: [140, 160], color: "bg-blue-500" },
+  { number: 2, name: "Endurance", percentage: [120, 140], color: "bg-green-500" },
+  { number: 3, name: "Tempo", percentage: [110, 120], color: "bg-yellow-500" },
+  { number: 4, name: "Seuil", percentage: [105, 110], color: "bg-orange-500" },
+  { number: 5, name: "Vitesse", percentage: [95, 105], color: "bg-red-500" },
 ];
 
 export default function ZonesPage() {
