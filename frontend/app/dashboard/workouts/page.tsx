@@ -23,7 +23,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar, Clock, Ruler, Trash2, Edit } from "lucide-react";
+import { Plus, Calendar, Clock, Ruler, Trash2, Edit, List } from "lucide-react";
 
 interface Workout {
   id: string;
@@ -36,6 +36,27 @@ interface Workout {
   description: string | null;
   objective: string | null;
   status: "planned" | "completed" | "cancelled" | "draft";
+}
+
+interface WorkoutBlock {
+  id: string;
+  workout_id: string;
+  block_order: number;
+  block_type: "warmup" | "main" | "recovery" | "cooldown";
+  duration_minutes: number | null;
+  distance_km: number | null;
+  zone_id: string | null;
+  repetitions: number;
+  notes: string | null;
+}
+
+interface Zone {
+  id: string;
+  zone_number: number;
+  zone_name: string;
+  min_value: number;
+  max_value: number;
+  color: string;
 }
 
 const disciplineLabels = {
@@ -53,6 +74,13 @@ const workoutTypeLabels = {
   test: "Test",
 };
 
+const blockTypeLabels = {
+  warmup: "Échauffement",
+  main: "Bloc principal",
+  recovery: "Récupération",
+  cooldown: "Retour au calme",
+};
+
 const disciplineColors = {
   running: "bg-green-100 text-green-800",
   cycling: "bg-blue-100 text-blue-800",
@@ -66,6 +94,19 @@ export default function WorkoutsPage() {
   const [userId, setUserId] = useState<string>("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
+
+  // Blocks management
+  const [workoutBlocks, setWorkoutBlocks] = useState<WorkoutBlock[]>([]);
+  const [availableZones, setAvailableZones] = useState<Zone[]>([]);
+  const [blockFormData, setBlockFormData] = useState({
+    block_type: "main" as "warmup" | "main" | "recovery" | "cooldown",
+    duration_minutes: "",
+    distance_km: "",
+    zone_id: "",
+    repetitions: "1",
+    notes: "",
+  });
+  const [editingBlockIndex, setEditingBlockIndex] = useState<number | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -114,6 +155,39 @@ export default function WorkoutsPage() {
     }
   };
 
+  const loadZones = async (discipline: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("zones")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("discipline", discipline)
+        .order("zone_number", { ascending: true });
+
+      if (error) throw error;
+
+      setAvailableZones(data || []);
+    } catch (error: any) {
+      console.error("Erreur lors du chargement des zones:", error);
+    }
+  };
+
+  const loadWorkoutBlocks = async (workoutId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("workout_blocks")
+        .select("*")
+        .eq("workout_id", workoutId)
+        .order("block_order", { ascending: true });
+
+      if (error) throw error;
+
+      setWorkoutBlocks(data || []);
+    } catch (error: any) {
+      console.error("Erreur lors du chargement des blocs:", error);
+    }
+  };
+
   const deleteWorkout = async (id: string) => {
     if (!confirm("Êtes-vous sûr de vouloir supprimer cette séance ?")) return;
 
@@ -138,6 +212,76 @@ export default function WorkoutsPage() {
     }
   };
 
+  const addBlock = () => {
+    const newBlock: WorkoutBlock = {
+      id: `temp-${Date.now()}`,
+      workout_id: "",
+      block_order: workoutBlocks.length + 1,
+      block_type: blockFormData.block_type,
+      duration_minutes: blockFormData.duration_minutes ? parseInt(blockFormData.duration_minutes) : null,
+      distance_km: blockFormData.distance_km ? parseFloat(blockFormData.distance_km) : null,
+      zone_id: blockFormData.zone_id || null,
+      repetitions: parseInt(blockFormData.repetitions) || 1,
+      notes: blockFormData.notes || null,
+    };
+
+    setWorkoutBlocks([...workoutBlocks, newBlock]);
+    resetBlockForm();
+  };
+
+  const updateBlock = () => {
+    if (editingBlockIndex === null) return;
+
+    const updatedBlocks = [...workoutBlocks];
+    updatedBlocks[editingBlockIndex] = {
+      ...updatedBlocks[editingBlockIndex],
+      block_type: blockFormData.block_type,
+      duration_minutes: blockFormData.duration_minutes ? parseInt(blockFormData.duration_minutes) : null,
+      distance_km: blockFormData.distance_km ? parseFloat(blockFormData.distance_km) : null,
+      zone_id: blockFormData.zone_id || null,
+      repetitions: parseInt(blockFormData.repetitions) || 1,
+      notes: blockFormData.notes || null,
+    };
+
+    setWorkoutBlocks(updatedBlocks);
+    setEditingBlockIndex(null);
+    resetBlockForm();
+  };
+
+  const removeBlock = (index: number) => {
+    const updatedBlocks = workoutBlocks.filter((_, i) => i !== index);
+    // Update block_order
+    updatedBlocks.forEach((block, i) => {
+      block.block_order = i + 1;
+    });
+    setWorkoutBlocks(updatedBlocks);
+  };
+
+  const editBlock = (index: number) => {
+    const block = workoutBlocks[index];
+    setBlockFormData({
+      block_type: block.block_type,
+      duration_minutes: block.duration_minutes?.toString() || "",
+      distance_km: block.distance_km?.toString() || "",
+      zone_id: block.zone_id || "",
+      repetitions: block.repetitions.toString(),
+      notes: block.notes || "",
+    });
+    setEditingBlockIndex(index);
+  };
+
+  const resetBlockForm = () => {
+    setBlockFormData({
+      block_type: "main",
+      duration_minutes: "",
+      distance_km: "",
+      zone_id: "",
+      repetitions: "1",
+      notes: "",
+    });
+    setEditingBlockIndex(null);
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("fr-FR", {
@@ -160,14 +304,21 @@ export default function WorkoutsPage() {
       objective: "",
     });
     setEditingWorkout(null);
+    setWorkoutBlocks([]);
+    setAvailableZones([]);
+    resetBlockForm();
   };
 
-  const openCreateDialog = () => {
+  const openCreateDialog = async () => {
     resetForm();
     setIsDialogOpen(true);
+    // Load zones for default discipline (running)
+    if (userId) {
+      await loadZones("running");
+    }
   };
 
-  const openEditDialog = (workout: Workout) => {
+  const openEditDialog = async (workout: Workout) => {
     setEditingWorkout(workout);
     setFormData({
       title: workout.title,
@@ -180,6 +331,12 @@ export default function WorkoutsPage() {
       objective: workout.objective || "",
     });
     setIsDialogOpen(true);
+
+    // Load zones and blocks for this workout
+    if (userId) {
+      await loadZones(workout.discipline);
+      await loadWorkoutBlocks(workout.id);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -208,6 +365,8 @@ export default function WorkoutsPage() {
         status: "planned" as const,
       };
 
+      let workoutId: string;
+
       if (editingWorkout) {
         // Update existing workout
         const { error } = await supabase
@@ -217,20 +376,59 @@ export default function WorkoutsPage() {
 
         if (error) throw error;
 
+        workoutId = editingWorkout.id;
+
+        // Delete existing blocks
+        await supabase.from("workout_blocks").delete().eq("workout_id", workoutId);
+
         toast({
           title: "Séance modifiée",
           description: "La séance a été modifiée avec succès",
         });
       } else {
         // Create new workout
-        const { error } = await supabase.from("workouts").insert(workoutData);
+        const { data, error } = await supabase
+          .from("workouts")
+          .insert(workoutData)
+          .select()
+          .single();
 
         if (error) throw error;
+        if (!data) throw new Error("Impossible de créer la séance");
+
+        workoutId = data.id;
 
         toast({
           title: "Séance créée",
           description: "La séance a été créée avec succès",
         });
+      }
+
+      // Save workout blocks if any
+      if (workoutBlocks.length > 0) {
+        const blocksToSave = workoutBlocks.map((block, index) => ({
+          workout_id: workoutId,
+          block_order: index + 1,
+          block_type: block.block_type,
+          duration_minutes: block.duration_minutes,
+          distance_km: block.distance_km,
+          zone_id: block.zone_id,
+          repetitions: block.repetitions,
+          notes: block.notes,
+        }));
+
+        const { error: blocksError } = await supabase
+          .from("workout_blocks")
+          .insert(blocksToSave);
+
+        if (blocksError) {
+          console.error("Erreur lors de la sauvegarde des blocs:", blocksError);
+          toast({
+            title: "Attention",
+            description: "La séance a été créée mais certains blocs n'ont pas pu être sauvegardés",
+            variant: "destructive",
+          });
+        }
       }
 
       setIsDialogOpen(false);
@@ -390,9 +588,13 @@ export default function WorkoutsPage() {
                 </Label>
                 <Select
                   value={formData.discipline}
-                  onValueChange={(value: "running" | "cycling" | "swimming") =>
-                    setFormData({ ...formData, discipline: value })
-                  }
+                  onValueChange={async (value: "running" | "cycling" | "swimming") => {
+                    setFormData({ ...formData, discipline: value });
+                    // Reload zones when discipline changes
+                    if (userId) {
+                      await loadZones(value);
+                    }
+                  }}
                 >
                   <SelectTrigger className="mt-2">
                     <SelectValue />
@@ -505,6 +707,195 @@ export default function WorkoutsPage() {
                 rows={4}
                 className="mt-2"
               />
+            </div>
+
+            {/* Workout Blocks Section */}
+            <div className="border-t pt-6">
+              <div className="flex items-center gap-2 mb-4">
+                <List className="w-5 h-5" />
+                <h3 className="font-semibold">Blocs d'entraînement</h3>
+              </div>
+
+              {/* Existing blocks list */}
+              {workoutBlocks.length > 0 && (
+                <div className="space-y-2 mb-4">
+                  {workoutBlocks.map((block, index) => {
+                    const zone = availableZones.find((z) => z.id === block.zone_id);
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">
+                              {block.repetitions > 1 ? `${block.repetitions}x ` : ""}
+                              {blockTypeLabels[block.block_type]}
+                            </span>
+                            {zone && (
+                              <span
+                                className={`px-2 py-0.5 rounded text-xs text-white ${zone.color}`}
+                              >
+                                Zone {zone.zone_number}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm text-sub flex gap-3">
+                            {block.duration_minutes && (
+                              <span>{block.duration_minutes} min</span>
+                            )}
+                            {block.distance_km && <span>{block.distance_km} km</span>}
+                            {block.notes && <span className="italic">{block.notes}</span>}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => editBlock(index)}
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeBlock(index)}
+                          >
+                            <Trash2 className="w-3 h-3 text-red-500" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Add/Edit block form */}
+              <div className="bg-neutral-50 p-4 rounded-lg space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="block_type">Type de bloc</Label>
+                    <Select
+                      value={blockFormData.block_type}
+                      onValueChange={(value: "warmup" | "main" | "recovery" | "cooldown") =>
+                        setBlockFormData({ ...blockFormData, block_type: value })
+                      }
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="warmup">Échauffement</SelectItem>
+                        <SelectItem value="main">Bloc principal</SelectItem>
+                        <SelectItem value="recovery">Récupération</SelectItem>
+                        <SelectItem value="cooldown">Retour au calme</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="zone_select">Zone</Label>
+                    <Select
+                      value={blockFormData.zone_id}
+                      onValueChange={(value) =>
+                        setBlockFormData({ ...blockFormData, zone_id: value })
+                      }
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Aucune zone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Aucune zone</SelectItem>
+                        {availableZones.map((zone) => (
+                          <SelectItem key={zone.id} value={zone.id}>
+                            Zone {zone.zone_number} - {zone.zone_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label htmlFor="block_duration">Durée (min)</Label>
+                    <Input
+                      id="block_duration"
+                      type="number"
+                      value={blockFormData.duration_minutes}
+                      onChange={(e) =>
+                        setBlockFormData({
+                          ...blockFormData,
+                          duration_minutes: e.target.value,
+                        })
+                      }
+                      placeholder="30"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="block_distance">Distance (km)</Label>
+                    <Input
+                      id="block_distance"
+                      type="number"
+                      step="0.1"
+                      value={blockFormData.distance_km}
+                      onChange={(e) =>
+                        setBlockFormData({
+                          ...blockFormData,
+                          distance_km: e.target.value,
+                        })
+                      }
+                      placeholder="5"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="block_repetitions">Répétitions</Label>
+                    <Input
+                      id="block_repetitions"
+                      type="number"
+                      value={blockFormData.repetitions}
+                      onChange={(e) =>
+                        setBlockFormData({
+                          ...blockFormData,
+                          repetitions: e.target.value,
+                        })
+                      }
+                      placeholder="1"
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="block_notes">Notes</Label>
+                  <Input
+                    id="block_notes"
+                    value={blockFormData.notes}
+                    onChange={(e) =>
+                      setBlockFormData({ ...blockFormData, notes: e.target.value })
+                    }
+                    placeholder="Récupération active entre les répétitions..."
+                    className="mt-1"
+                  />
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={editingBlockIndex !== null ? updateBlock : addBlock}
+                  className="w-full"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {editingBlockIndex !== null ? "Modifier le bloc" : "Ajouter un bloc"}
+                </Button>
+              </div>
             </div>
 
             <div className="flex gap-4 justify-end pt-4 border-t">
