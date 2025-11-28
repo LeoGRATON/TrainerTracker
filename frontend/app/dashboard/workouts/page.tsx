@@ -796,18 +796,17 @@ export default function WorkoutsPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="zone_select">Zone</Label>
+                    <Label htmlFor="zone_select">Zone (optionnel)</Label>
                     <Select
-                      value={blockFormData.zone_id}
+                      value={blockFormData.zone_id || undefined}
                       onValueChange={(value) =>
                         setBlockFormData({ ...blockFormData, zone_id: value })
                       }
                     >
                       <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Aucune zone" />
+                        <SelectValue placeholder="Sélectionner une zone (optionnel)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Aucune zone</SelectItem>
                         {availableZones.map((zone) => (
                           <SelectItem key={zone.id} value={zone.id}>
                             Zone {zone.zone_number} - {zone.zone_name}
