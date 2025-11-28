@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS metrics (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
   discipline TEXT NOT NULL CHECK (discipline IN ('running', 'cycling', 'swimming')),
-  metric_type TEXT NOT NULL CHECK (metric_type IN ('vma', 'ftp', 'css')),
+  metric_type TEXT NOT NULL CHECK (metric_type IN ('vma', 'fcmax', 'ftp', 'css')),
   value NUMERIC NOT NULL CHECK (value > 0),
   unit TEXT NOT NULL,
   test_date DATE NOT NULL,

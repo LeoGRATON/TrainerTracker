@@ -31,6 +31,14 @@ const vmaZones: Zone[] = [
   { number: 5, name: "VO2max", percentage: [95, 100], color: "bg-red-500" },
 ];
 
+const fcmaxZones: Zone[] = [
+  { number: 1, name: "Récupération", percentage: [50, 60], color: "bg-blue-500" },
+  { number: 2, name: "Endurance", percentage: [60, 70], color: "bg-green-500" },
+  { number: 3, name: "Tempo", percentage: [70, 80], color: "bg-yellow-500" },
+  { number: 4, name: "Seuil", percentage: [80, 90], color: "bg-orange-500" },
+  { number: 5, name: "VO2max", percentage: [90, 100], color: "bg-red-500" },
+];
+
 const ftpZones: Zone[] = [
   { number: 1, name: "Récupération", percentage: [1, 55], color: "bg-blue-500" },
   { number: 2, name: "Endurance", percentage: [56, 75], color: "bg-green-500" },
@@ -51,10 +59,12 @@ export default function ZonesPage() {
   const { toast } = useToast();
   const [userId, setUserId] = useState<string>("");
 
-  // VMA
+  // VMA / FC max
+  const [runningMetricType, setRunningMetricType] = useState<"vma" | "fcmax">("vma");
   const [vma, setVma] = useState("");
-  const [showVmaHelp, setShowVmaHelp] = useState(false);
-  const [vmaCalculated, setVmaCalculated] = useState(false);
+  const [fcmax, setFcmax] = useState("");
+  const [showRunningHelp, setShowRunningHelp] = useState(false);
+  const [runningCalculated, setRunningCalculated] = useState(false);
 
   // FTP/PC
   const [metricType, setMetricType] = useState<"ftp" | "pc">("ftp");
@@ -88,12 +98,17 @@ export default function ZonesPage() {
 
       if (data) {
         const vmaMetric = data.find((m) => m.metric_type === "vma");
+        const fcmaxMetric = data.find((m) => m.metric_type === "fcmax");
         const ftpMetric = data.find((m) => m.metric_type === "ftp");
         const cssMetric = data.find((m) => m.metric_type === "css");
 
         if (vmaMetric) {
           setVma(vmaMetric.value.toString());
-          setVmaCalculated(true);
+          setRunningCalculated(true);
+        }
+        if (fcmaxMetric) {
+          setFcmax(fcmaxMetric.value.toString());
+          setRunningCalculated(true);
         }
         if (ftpMetric) {
           setFtp(ftpMetric.value.toString());
@@ -108,7 +123,7 @@ export default function ZonesPage() {
   };
 
   const saveMetric = async (
-    type: "vma" | "ftp" | "pc" | "css",
+    type: "vma" | "fcmax" | "ftp" | "pc" | "css",
     value: string,
     discipline: "running" | "cycling" | "swimming"
   ) => {
@@ -123,7 +138,10 @@ export default function ZonesPage() {
 
     try {
       // Déterminer l'unité selon le type de métrique
-      const unit = type === "vma" ? "km/h" : (type === "ftp" || type === "pc") ? "watts" : "sec/100m";
+      let unit = "km/h";
+      if (type === "fcmax") unit = "bpm";
+      else if (type === "ftp" || type === "pc") unit = "watts";
+      else if (type === "css") unit = "sec/100m";
 
       // Pour PC, on sauvegarde comme FTP car c'est la même unité (watts)
       const metricTypeForDB = type === "pc" ? "ftp" : type;
@@ -141,7 +159,11 @@ export default function ZonesPage() {
       if (metricError) throw metricError;
 
       // Calculer et sauvegarder les zones
-      const zones = type === "vma" ? vmaZones : (type === "ftp" || type === "pc") ? ftpZones : cssZones;
+      let zones = vmaZones;
+      if (type === "fcmax") zones = fcmaxZones;
+      else if (type === "ftp" || type === "pc") zones = ftpZones;
+      else if (type === "css") zones = cssZones;
+
       const baseValue = parseFloat(value);
 
       const zonesToSave = zones.map((zone) => ({
@@ -177,7 +199,7 @@ export default function ZonesPage() {
         description: `Vos zones de ${discipline === "running" ? "course" : discipline === "cycling" ? "vélo" : "natation"} ont été enregistrées.`,
       });
 
-      if (type === "vma") setVmaCalculated(true);
+      if (type === "vma" || type === "fcmax") setRunningCalculated(true);
       if (type === "ftp" || type === "pc") setFtpCalculated(true);
       if (type === "css") setCssCalculated(true);
     } catch (error: any) {
@@ -216,7 +238,7 @@ export default function ZonesPage() {
           <TabsTrigger value="swimming">Natation</TabsTrigger>
         </TabsList>
 
-        {/* Course à pied - VMA */}
+        {/* Course à pied - VMA / FC max */}
         <TabsContent value="running" className="space-y-6">
           <Card className="p-6">
             <div className="flex items-center gap-3 mb-6">
@@ -224,29 +246,66 @@ export default function ZonesPage() {
                 <Activity className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <h3>VMA - Vitesse Maximale Aérobie</h3>
+                <h3>VMA / Fréquence Cardiaque Max</h3>
                 <p className="text-sm text-sub">
-                  Vitesse que vous pouvez maintenir pendant environ 6 minutes
+                  Choisissez votre métrique pour calculer vos zones
                 </p>
               </div>
             </div>
 
             <div className="space-y-4">
+              <div className="flex gap-4 mb-4">
+                <button
+                  onClick={() => setRunningMetricType("vma")}
+                  className={`flex-1 p-3 rounded-lg border-2 transition-smooth ${
+                    runningMetricType === "vma"
+                      ? "border-green-500 bg-green-50"
+                      : "border-neutral-200"
+                  }`}
+                >
+                  <p className="font-semibold">VMA</p>
+                  <p className="text-xs text-sub">Vitesse Maximale Aérobie</p>
+                </button>
+                <button
+                  onClick={() => setRunningMetricType("fcmax")}
+                  className={`flex-1 p-3 rounded-lg border-2 transition-smooth ${
+                    runningMetricType === "fcmax"
+                      ? "border-green-500 bg-green-50"
+                      : "border-neutral-200"
+                  }`}
+                >
+                  <p className="font-semibold">FC max</p>
+                  <p className="text-xs text-sub">Fréquence Cardiaque Max</p>
+                </button>
+              </div>
+
               <div>
-                <Label htmlFor="vma">Ma VMA (km/h)</Label>
+                <Label htmlFor="running-metric">
+                  Ma {runningMetricType === "vma" ? "VMA (km/h)" : "FC max (bpm)"}
+                </Label>
                 <Input
-                  id="vma"
+                  id="running-metric"
                   type="number"
-                  step="0.1"
-                  value={vma}
-                  onChange={(e) => setVma(e.target.value)}
-                  placeholder="14.5"
+                  step={runningMetricType === "vma" ? "0.1" : "1"}
+                  value={runningMetricType === "vma" ? vma : fcmax}
+                  onChange={(e) =>
+                    runningMetricType === "vma"
+                      ? setVma(e.target.value)
+                      : setFcmax(e.target.value)
+                  }
+                  placeholder={runningMetricType === "vma" ? "14.5" : "185"}
                   className="mt-2"
                 />
               </div>
 
               <Button
-                onClick={() => saveMetric("vma", vma, "running")}
+                onClick={() =>
+                  saveMetric(
+                    runningMetricType,
+                    runningMetricType === "vma" ? vma : fcmax,
+                    "running"
+                  )
+                }
                 className="w-full bg-green-500 hover:bg-green-600"
               >
                 Calculer mes zones
@@ -255,38 +314,55 @@ export default function ZonesPage() {
               {/* Help Section */}
               <div className="border-t pt-4">
                 <button
-                  onClick={() => setShowVmaHelp(!showVmaHelp)}
+                  onClick={() => setShowRunningHelp(!showRunningHelp)}
                   className="flex items-center gap-2 text-sm text-sub hover:text-neutral-900 transition-smooth"
                 >
                   <Info className="w-4 h-4" />
-                  Comment obtenir ma VMA ?
-                  {showVmaHelp ? (
+                  Comment obtenir ma {runningMetricType === "vma" ? "VMA" : "FC max"} ?
+                  {showRunningHelp ? (
                     <ChevronUp className="w-4 h-4" />
                   ) : (
                     <ChevronDown className="w-4 h-4" />
                   )}
                 </button>
 
-                {showVmaHelp && (
+                {showRunningHelp && (
                   <div className="mt-4 p-4 bg-neutral-50 rounded-lg space-y-3">
                     <h4 className="font-semibold">Tests recommandés :</h4>
-                    <ul className="space-y-2 text-sm text-sub">
-                      <li>
-                        <strong>Test VAMEVAL :</strong> Course progressive avec
-                        paliers de 1 min jusqu'à épuisement
-                      </li>
-                      <li>
-                        <strong>Test demi-Cooper (6 min) :</strong> Distance
-                        maximale en 6 minutes, VMA = distance / 100
-                      </li>
-                      <li>
-                        <strong>Test de piste 1500m :</strong> VMA = (3600 /
-                        temps en secondes) × 1.5
-                      </li>
-                    </ul>
+                    {runningMetricType === "vma" ? (
+                      <ul className="space-y-2 text-sm text-sub">
+                        <li>
+                          <strong>Test VAMEVAL :</strong> Course progressive avec
+                          paliers de 1 min jusqu'à épuisement
+                        </li>
+                        <li>
+                          <strong>Test demi-Cooper (6 min) :</strong> Distance
+                          maximale en 6 minutes, VMA = distance / 100
+                        </li>
+                        <li>
+                          <strong>Test de piste 1500m :</strong> VMA = (3600 /
+                          temps en secondes) × 1.5
+                        </li>
+                      </ul>
+                    ) : (
+                      <ul className="space-y-2 text-sm text-sub">
+                        <li>
+                          <strong>Formule 220 - âge :</strong> Méthode simple mais
+                          approximative (ex: 220 - 35 = 185 bpm)
+                        </li>
+                        <li>
+                          <strong>Test progressif :</strong> Course progressive
+                          jusqu'à épuisement avec cardiofréquencemètre
+                        </li>
+                        <li>
+                          <strong>Test terrain :</strong> Sprint maximal de 3-4
+                          min avec mesure de la FC max
+                        </li>
+                      </ul>
+                    )}
                     <p className="text-sm italic">
-                      💡 Conseil : Faites-vous accompagner ou utilisez une
-                      application comme Décathlon Coach
+                      💡 Conseil : Utilisez un cardiofréquencemètre pour plus de
+                      précision
                     </p>
                   </div>
                 )}
@@ -294,12 +370,16 @@ export default function ZonesPage() {
             </div>
           </Card>
 
-          {/* Zones VMA */}
-          {vma && parseFloat(vma) > 0 && (
+          {/* Zones Running */}
+          {((runningMetricType === "vma" && vma && parseFloat(vma) > 0) ||
+            (runningMetricType === "fcmax" && fcmax && parseFloat(fcmax) > 0)) && (
             <Card className="p-6">
               <h3 className="mb-4">Vos zones de course</h3>
               <div className="space-y-3">
-                {calculateZoneValues(vma, vmaZones)?.map((zone) => (
+                {calculateZoneValues(
+                  runningMetricType === "vma" ? vma : fcmax,
+                  runningMetricType === "vma" ? vmaZones : fcmaxZones
+                )?.map((zone) => (
                   <div
                     key={zone.number}
                     className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg"
@@ -317,7 +397,7 @@ export default function ZonesPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">
-                        {zone.min} - {zone.max} km/h
+                        {zone.min} - {zone.max} {runningMetricType === "vma" ? "km/h" : "bpm"}
                       </p>
                     </div>
                   </div>
