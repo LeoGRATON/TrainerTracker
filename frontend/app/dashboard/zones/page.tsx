@@ -122,12 +122,17 @@ export default function ZonesPage() {
     }
 
     try {
+      // Déterminer l'unité selon le type de métrique
+      const unit = type === "vma" ? "km/h" : type === "ftp" ? "watts" : "sec/100m";
+
       // Sauvegarder la métrique
       const { error: metricError } = await supabase.from("metrics").insert({
         user_id: userId,
         metric_type: type,
         value: parseFloat(value),
         discipline,
+        unit,
+        test_date: new Date().toISOString().split('T')[0], // Date du jour au format YYYY-MM-DD
       });
 
       if (metricError) throw metricError;
@@ -143,6 +148,9 @@ export default function ZonesPage() {
         zone_name: zone.name,
         min_value: (baseValue * zone.percentage[0]) / 100,
         max_value: (baseValue * zone.percentage[1]) / 100,
+        percentage_min: zone.percentage[0],
+        percentage_max: zone.percentage[1],
+        color: zone.color,
       }));
 
       const { error: zonesError } = await supabase

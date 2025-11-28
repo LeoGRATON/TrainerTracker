@@ -80,6 +80,7 @@ export default function ProfilePage() {
         .from("profiles")
         .upsert({
           id: session.user.id,
+          email: session.user.email,
           full_name: profile.full_name,
           age: profile.age ? parseInt(profile.age) : null,
           weight: profile.weight ? parseFloat(profile.weight) : null,
