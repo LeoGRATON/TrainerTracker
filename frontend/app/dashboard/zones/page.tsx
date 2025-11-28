@@ -108,7 +108,7 @@ export default function ZonesPage() {
   };
 
   const saveMetric = async (
-    type: "vma" | "ftp" | "css",
+    type: "vma" | "ftp" | "pc" | "css",
     value: string,
     discipline: "running" | "cycling" | "swimming"
   ) => {
@@ -123,12 +123,15 @@ export default function ZonesPage() {
 
     try {
       // Déterminer l'unité selon le type de métrique
-      const unit = type === "vma" ? "km/h" : type === "ftp" ? "watts" : "sec/100m";
+      const unit = type === "vma" ? "km/h" : (type === "ftp" || type === "pc") ? "watts" : "sec/100m";
+
+      // Pour PC, on sauvegarde comme FTP car c'est la même unité (watts)
+      const metricTypeForDB = type === "pc" ? "ftp" : type;
 
       // Sauvegarder la métrique
       const { error: metricError } = await supabase.from("metrics").insert({
         user_id: userId,
-        metric_type: type,
+        metric_type: metricTypeForDB,
         value: parseFloat(value),
         discipline,
         unit,
@@ -153,6 +156,8 @@ export default function ZonesPage() {
         color: zone.color,
       }));
 
+      console.log("Zones à sauvegarder:", zonesToSave);
+
       const { error: zonesError } = await supabase
         .from("zones")
         .delete()
@@ -173,7 +178,7 @@ export default function ZonesPage() {
       });
 
       if (type === "vma") setVmaCalculated(true);
-      if (type === "ftp") setFtpCalculated(true);
+      if (type === "ftp" || type === "pc") setFtpCalculated(true);
       if (type === "css") setCssCalculated(true);
     } catch (error: any) {
       console.error("Erreur lors de la sauvegarde:", error);
@@ -378,7 +383,7 @@ export default function ZonesPage() {
               </div>
 
               <Button
-                onClick={() => saveMetric("ftp", ftp, "cycling")}
+                onClick={() => saveMetric(metricType, ftp, "cycling")}
                 className="w-full bg-blue-500 hover:bg-blue-600"
               >
                 Calculer mes zones
