@@ -1,0 +1,256 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================ */
+/* TYPOGRAPHIES PERSONNALISÉES                 */
+/* ============================================ */
+
+/* MangoGrotesque - Police principale */
+@font-face {
+  font-family: "Mango Grotesque";
+  src: url("/font/MangoGrotesque-Light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Mango Grotesque";
+  src: url("/font/MangoGrotesque-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Mango Grotesque";
+  src: url("/font/MangoGrotesque-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Mango Grotesque";
+  src: url("/font/MangoGrotesque-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Mango Grotesque";
+  src: url("/font/MangoGrotesque-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Nohemi - Police secondaire */
+@font-face {
+  font-family: "Nohemi";
+  src: url("/font/Nohemi-Thin.woff2") format("woff2");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Nohemi";
+  src: url("/font/Nohemi-Light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Nohemi";
+  src: url("/font/Nohemi-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Nohemi";
+  src: url("/font/Nohemi-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Nohemi";
+  src: url("/font/Nohemi-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Nohemi";
+  src: url("/font/Nohemi-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Nohemi";
+  src: url("/font/Nohemi-Black.woff2") format("woff2");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ============================================ */
+/* VARIABLES CSS                               */
+/* ============================================ */
+
+@layer base {
+  :root {
+    /* shadcn/ui variables */
+    --background: 0 0% 100%;
+    --foreground: 240 12% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 12% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 12% 17%;
+    --primary: 240 12% 17%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 240 12% 17%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 62 99% 61%;
+    --accent-foreground: 240 12% 17%;
+    --destructive: 359 100% 61%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 240 12% 17%;
+    --radius: 0.5rem;
+
+    /* Font variables */
+    --font-mango: "Mango Grotesque", system-ui, sans-serif;
+    --font-nohemi: "Nohemi", system-ui, sans-serif;
+  }
+
+  .dark {
+    --background: 240 12% 17%;
+    --foreground: 0 0% 98%;
+    --card: 240 12% 17%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 12% 17%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 12% 17%;
+    --secondary: 240 10% 25%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 10% 25%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 62 99% 61%;
+    --accent-foreground: 240 12% 17%;
+    --destructive: 359 100% 61%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 10% 25%;
+    --input: 240 10% 25%;
+    --ring: 0 0% 83.1%;
+  }
+}
+
+/* ============================================ */
+/* STYLES DE BASE                              */
+/* ============================================ */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-nohemi);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  /* Headings avec Mango Grotesque */
+  h1 {
+    font-family: var(--font-mango);
+    font-size: 64px;
+    line-height: 1.2;
+    font-weight: 700;
+  }
+
+  h2 {
+    font-family: var(--font-mango);
+    font-size: 48px;
+    line-height: 1.2;
+    font-weight: 700;
+  }
+
+  h3 {
+    font-family: var(--font-mango);
+    font-size: 32px;
+    line-height: 1.3;
+    font-weight: 700;
+  }
+
+  h4 {
+    font-family: var(--font-mango);
+    font-size: 22px;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+
+  h5 {
+    font-family: var(--font-mango);
+    font-size: 18px;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+
+  h6 {
+    font-family: var(--font-mango);
+    font-size: 16px;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+
+  p {
+    font-family: var(--font-nohemi);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+}
+
+/* ============================================ */
+/* UTILITAIRES PERSONNALISÉS                   */
+/* ============================================ */
+
+@layer utilities {
+  /* Gradient accent */
+  .bg-gradient-accent {
+    background: linear-gradient(135deg, #F3FE39 0%, #d9e521 100%);
+  }
+
+  /* Text gradient */
+  .text-gradient-accent {
+    @apply bg-gradient-to-r from-accent-500 to-accent-600 bg-clip-text text-transparent;
+  }
+
+  /* Smooth transitions */
+  .transition-smooth {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  /* Sub-text (texte secondaire) */
+  .text-sub {
+    @apply text-neutral-500;
+    font-family: var(--font-nohemi);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+}
