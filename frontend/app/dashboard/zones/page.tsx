@@ -276,6 +276,14 @@ export default function ZonesPage() {
     }));
   };
 
+  // Convert km/h to pace in min/km format (MM:SS)
+  const kmhToPace = (kmh: number): string => {
+    const paceMinutes = 60 / kmh;
+    const minutes = Math.floor(paceMinutes);
+    const seconds = Math.round((paceMinutes - minutes) * 60);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
+
   return (
     <div>
       <div className="mb-8">
@@ -392,7 +400,8 @@ export default function ZonesPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">
-                        {zone.min} - {zone.max} km/h
+                        {kmhToPace(parseFloat(zone.min))} -{" "}
+                        {kmhToPace(parseFloat(zone.max))} min/km
                       </p>
                     </div>
                   </div>
