@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS workouts (
   title TEXT NOT NULL,
   discipline TEXT NOT NULL CHECK (discipline IN ('running', 'cycling', 'swimming')),
   workout_type TEXT NOT NULL CHECK (workout_type IN ('interval', 'endurance', 'tempo', 'recovery', 'race', 'test')),
-  scheduled_date TIMESTAMPTZ NOT NULL,
+  scheduled_date TIMESTAMPTZ, -- NULL = template, NOT NULL = planned workout
   duration_minutes INTEGER CHECK (duration_minutes > 0),
   distance_km NUMERIC CHECK (distance_km > 0),
   description TEXT,

@@ -1,20 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Target,
-  Info,
-  Activity,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { Activity, ChevronDown, ChevronUp, Info, Target } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface Zone {
   number: number;
@@ -24,7 +18,12 @@ interface Zone {
 }
 
 const vmaZones: Zone[] = [
-  { number: 1, name: "Récupération", percentage: [60, 70], color: "bg-blue-500" },
+  {
+    number: 1,
+    name: "Récupération",
+    percentage: [60, 70],
+    color: "bg-blue-500",
+  },
   { number: 2, name: "Endurance", percentage: [70, 80], color: "bg-green-500" },
   { number: 3, name: "Tempo", percentage: [80, 90], color: "bg-yellow-500" },
   { number: 4, name: "Seuil", percentage: [90, 95], color: "bg-orange-500" },
@@ -32,7 +31,12 @@ const vmaZones: Zone[] = [
 ];
 
 const fcmaxZones: Zone[] = [
-  { number: 1, name: "Récupération", percentage: [50, 60], color: "bg-blue-500" },
+  {
+    number: 1,
+    name: "Récupération",
+    percentage: [50, 60],
+    color: "bg-blue-500",
+  },
   { number: 2, name: "Endurance", percentage: [60, 70], color: "bg-green-500" },
   { number: 3, name: "Tempo", percentage: [70, 80], color: "bg-yellow-500" },
   { number: 4, name: "Seuil", percentage: [80, 90], color: "bg-orange-500" },
@@ -40,7 +44,12 @@ const fcmaxZones: Zone[] = [
 ];
 
 const ftpZones: Zone[] = [
-  { number: 1, name: "Récupération", percentage: [1, 55], color: "bg-blue-500" },
+  {
+    number: 1,
+    name: "Récupération",
+    percentage: [1, 55],
+    color: "bg-blue-500",
+  },
   { number: 2, name: "Endurance", percentage: [56, 75], color: "bg-green-500" },
   { number: 3, name: "Tempo", percentage: [76, 90], color: "bg-yellow-500" },
   { number: 4, name: "Seuil", percentage: [91, 105], color: "bg-orange-500" },
@@ -48,8 +57,18 @@ const ftpZones: Zone[] = [
 ];
 
 const cssZones: Zone[] = [
-  { number: 1, name: "Récupération", percentage: [115, 125], color: "bg-blue-500" },
-  { number: 2, name: "Endurance", percentage: [105, 115], color: "bg-green-500" },
+  {
+    number: 1,
+    name: "Récupération",
+    percentage: [115, 125],
+    color: "bg-blue-500",
+  },
+  {
+    number: 2,
+    name: "Endurance",
+    percentage: [105, 115],
+    color: "bg-green-500",
+  },
   { number: 3, name: "Tempo", percentage: [100, 105], color: "bg-yellow-500" },
   { number: 4, name: "Seuil", percentage: [95, 100], color: "bg-orange-500" },
   { number: 5, name: "Vitesse", percentage: [85, 95], color: "bg-red-500" },
@@ -154,17 +173,19 @@ export default function ZonesPage() {
         value: parseFloat(value),
         discipline,
         unit,
-        test_date: new Date().toISOString().split('T')[0],
+        test_date: new Date().toISOString().split("T")[0],
       });
 
-      const { data: metricData, error: metricError } = await supabase.from("metrics").insert({
-        user_id: userId,
-        metric_type: metricTypeForDB,
-        value: parseFloat(value),
-        discipline,
-        unit,
-        test_date: new Date().toISOString().split('T')[0], // Date du jour au format YYYY-MM-DD
-      });
+      const { data: metricData, error: metricError } = await supabase
+        .from("metrics")
+        .insert({
+          user_id: userId,
+          metric_type: metricTypeForDB,
+          value: parseFloat(value),
+          discipline,
+          unit,
+          test_date: new Date().toISOString().split("T")[0], // Date du jour au format YYYY-MM-DD
+        });
 
       if (metricError) {
         console.error("Erreur insertion métrique:", metricError);
@@ -221,7 +242,13 @@ export default function ZonesPage() {
 
       toast({
         title: "Zones calculées !",
-        description: `Vos zones de ${discipline === "running" ? "course" : discipline === "cycling" ? "vélo" : "natation"} ont été enregistrées.`,
+        description: `Vos zones de ${
+          discipline === "running"
+            ? "course"
+            : discipline === "cycling"
+            ? "vélo"
+            : "natation"
+        } ont été enregistrées.`,
       });
 
       if (type === "vma") setVmaCalculated(true);
@@ -232,7 +259,8 @@ export default function ZonesPage() {
       console.error("Erreur lors de la sauvegarde:", error);
       toast({
         title: "Erreur",
-        description: error.message || "Une erreur est survenue lors de la sauvegarde",
+        description:
+          error.message || "Une erreur est survenue lors de la sauvegarde",
         variant: "destructive",
       });
     }
@@ -252,9 +280,7 @@ export default function ZonesPage() {
     <div>
       <div className="mb-8">
         <h1 className="mb-2">Zones d'Entraînement</h1>
-        <p className="text-sub">
-          Configurez vos zones pour les 3 disciplines
-        </p>
+        <p className="text-sub">Configurez vos zones pour les 3 disciplines</p>
       </div>
 
       <Tabs defaultValue="running" className="space-y-6">
@@ -318,7 +344,7 @@ export default function ZonesPage() {
 
                 {showVmaHelp && (
                   <div className="mt-4 p-4 bg-neutral-50 rounded-lg space-y-3">
-                    <h4 className="font-semibold">Tests recommandés :</h4>
+                    <h4>Tests recommandés :</h4>
                     <ul className="space-y-2 text-sm text-sub">
                       <li>
                         <strong>Test VAMEVAL :</strong> Course progressive avec
@@ -427,7 +453,7 @@ export default function ZonesPage() {
 
                 {showFcmaxHelp && (
                   <div className="mt-4 p-4 bg-neutral-50 rounded-lg space-y-3">
-                    <h4 className="font-semibold">Tests recommandés :</h4>
+                    <h4>Tests recommandés :</h4>
                     <ul className="space-y-2 text-sm text-sub">
                       <li>
                         <strong>Formule 220 - âge :</strong> Méthode simple mais
@@ -528,7 +554,8 @@ export default function ZonesPage() {
 
               <div>
                 <Label htmlFor="ftp">
-                  Ma {metricType === "ftp" ? "FTP" : "Puissance Critique"} (watts)
+                  Ma {metricType === "ftp" ? "FTP" : "Puissance Critique"}{" "}
+                  (watts)
                 </Label>
                 <Input
                   id="ftp"
@@ -564,7 +591,7 @@ export default function ZonesPage() {
 
                 {showFtpHelp && (
                   <div className="mt-4 p-4 bg-neutral-50 rounded-lg space-y-3">
-                    <h4 className="font-semibold">Tests recommandés :</h4>
+                    <h4>Tests recommandés :</h4>
                     {metricType === "ftp" ? (
                       <ul className="space-y-2 text-sm text-sub">
                         <li>
@@ -691,7 +718,7 @@ export default function ZonesPage() {
 
                 {showCssHelp && (
                   <div className="mt-4 p-4 bg-neutral-50 rounded-lg space-y-3">
-                    <h4 className="font-semibold">Tests recommandés :</h4>
+                    <h4>Tests recommandés :</h4>
                     <ul className="space-y-2 text-sm text-sub">
                       <li>
                         <strong>Test T30 :</strong> Nager le plus loin possible

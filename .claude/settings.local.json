@@ -14,7 +14,11 @@
       "Bash(git push:*)",
       "Bash(npm install @radix-ui/react-icons)",
       "Bash(cat:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(if exist .next rmdir /s /q .next)",
+      "Bash(npm run build:*)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []

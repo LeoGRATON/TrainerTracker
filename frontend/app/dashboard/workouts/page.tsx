@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -14,28 +18,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar, Clock, Ruler, Trash2, Edit, List } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { Clock, Edit, List, Plus, Ruler, Trash2, BookOpen } from "lucide-react";
+import { useEffect, useState } from "react";
 
-interface Workout {
+interface WorkoutTemplate {
   id: string;
   title: string;
   discipline: "running" | "cycling" | "swimming";
   workout_type: "interval" | "endurance" | "tempo" | "recovery" | "race" | "test";
-  scheduled_date: string;
   duration_minutes: number | null;
   distance_km: number | null;
   description: string | null;
   objective: string | null;
-  status: "planned" | "completed" | "cancelled" | "draft";
 }
 
 interface WorkoutBlock {
@@ -59,12 +56,6 @@ interface Zone {
   color: string;
 }
 
-const disciplineLabels = {
-  running: "Course",
-  cycling: "Vélo",
-  swimming: "Natation",
-};
-
 const workoutTypeLabels = {
   interval: "Fractionné",
   endurance: "Endurance",
@@ -81,19 +72,13 @@ const blockTypeLabels = {
   cooldown: "Retour au calme",
 };
 
-const disciplineColors = {
-  running: "bg-green-100 text-green-800",
-  cycling: "bg-blue-100 text-blue-800",
-  swimming: "bg-cyan-100 text-cyan-800",
-};
-
 export default function WorkoutsPage() {
   const { toast } = useToast();
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string>("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<WorkoutTemplate | null>(null);
 
   // Blocks management
   const [workoutBlocks, setWorkoutBlocks] = useState<WorkoutBlock[]>([]);
@@ -113,7 +98,6 @@ export default function WorkoutsPage() {
     title: "",
     discipline: "running" as "running" | "cycling" | "swimming",
     workout_type: "endurance" as "interval" | "endurance" | "tempo" | "recovery" | "race" | "test",
-    scheduled_date: "",
     duration_minutes: "",
     distance_km: "",
     description: "",
@@ -121,10 +105,10 @@ export default function WorkoutsPage() {
   });
 
   useEffect(() => {
-    loadWorkouts();
+    loadTemplates();
   }, []);
 
-  const loadWorkouts = async () => {
+  const loadTemplates = async () => {
     try {
       const {
         data: { session },
@@ -133,21 +117,23 @@ export default function WorkoutsPage() {
       if (session) {
         setUserId(session.user.id);
 
+        // Load only templates (scheduled_date IS NULL)
         const { data, error } = await supabase
           .from("workouts")
           .select("*")
           .eq("user_id", session.user.id)
-          .order("scheduled_date", { ascending: true });
+          .is("scheduled_date", null)
+          .order("created_at", { ascending: false });
 
         if (error) throw error;
 
-        setWorkouts(data || []);
+        setTemplates(data || []);
       }
     } catch (error: any) {
-      console.error("Erreur lors du chargement des séances:", error);
+      console.error("Erreur lors du chargement des templates:", error);
       toast({
         title: "Erreur",
-        description: "Impossible de charger les séances",
+        description: "Impossible de charger les templates de séances",
         variant: "destructive",
       });
     } finally {
@@ -188,8 +174,8 @@ export default function WorkoutsPage() {
     }
   };
 
-  const deleteWorkout = async (id: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer cette séance ?")) return;
+  const deleteTemplate = async (id: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce template ?")) return;
 
     try {
       const { error } = await supabase.from("workouts").delete().eq("id", id);
@@ -197,16 +183,16 @@ export default function WorkoutsPage() {
       if (error) throw error;
 
       toast({
-        title: "Séance supprimée",
-        description: "La séance a été supprimée avec succès",
+        title: "Template supprimé",
+        description: "Le template de séance a été supprimé avec succès",
       });
 
-      loadWorkouts();
+      loadTemplates();
     } catch (error: any) {
       console.error("Erreur lors de la suppression:", error);
       toast({
         title: "Erreur",
-        description: "Impossible de supprimer la séance",
+        description: "Impossible de supprimer le template",
         variant: "destructive",
       });
     }
@@ -218,8 +204,12 @@ export default function WorkoutsPage() {
       workout_id: "",
       block_order: workoutBlocks.length + 1,
       block_type: blockFormData.block_type,
-      duration_minutes: blockFormData.duration_minutes ? parseInt(blockFormData.duration_minutes) : null,
-      distance_km: blockFormData.distance_km ? parseFloat(blockFormData.distance_km) : null,
+      duration_minutes: blockFormData.duration_minutes
+        ? parseInt(blockFormData.duration_minutes)
+        : null,
+      distance_km: blockFormData.distance_km
+        ? parseFloat(blockFormData.distance_km)
+        : null,
       zone_id: blockFormData.zone_id || null,
       repetitions: parseInt(blockFormData.repetitions) || 1,
       notes: blockFormData.notes || null,
@@ -236,8 +226,12 @@ export default function WorkoutsPage() {
     updatedBlocks[editingBlockIndex] = {
       ...updatedBlocks[editingBlockIndex],
       block_type: blockFormData.block_type,
-      duration_minutes: blockFormData.duration_minutes ? parseInt(blockFormData.duration_minutes) : null,
-      distance_km: blockFormData.distance_km ? parseFloat(blockFormData.distance_km) : null,
+      duration_minutes: blockFormData.duration_minutes
+        ? parseInt(blockFormData.duration_minutes)
+        : null,
+      distance_km: blockFormData.distance_km
+        ? parseFloat(blockFormData.distance_km)
+        : null,
       zone_id: blockFormData.zone_id || null,
       repetitions: parseInt(blockFormData.repetitions) || 1,
       notes: blockFormData.notes || null,
@@ -282,28 +276,17 @@ export default function WorkoutsPage() {
     setEditingBlockIndex(null);
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("fr-FR", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
   const resetForm = () => {
     setFormData({
       title: "",
       discipline: "running",
       workout_type: "endurance",
-      scheduled_date: "",
       duration_minutes: "",
       distance_km: "",
       description: "",
       objective: "",
     });
-    setEditingWorkout(null);
+    setEditingTemplate(null);
     setWorkoutBlocks([]);
     setAvailableZones([]);
     resetBlockForm();
@@ -318,89 +301,95 @@ export default function WorkoutsPage() {
     }
   };
 
-  const openEditDialog = async (workout: Workout) => {
-    setEditingWorkout(workout);
+  const openEditDialog = async (template: WorkoutTemplate) => {
+    setEditingTemplate(template);
     setFormData({
-      title: workout.title,
-      discipline: workout.discipline,
-      workout_type: workout.workout_type,
-      scheduled_date: workout.scheduled_date.split('T')[0],
-      duration_minutes: workout.duration_minutes?.toString() || "",
-      distance_km: workout.distance_km?.toString() || "",
-      description: workout.description || "",
-      objective: workout.objective || "",
+      title: template.title,
+      discipline: template.discipline,
+      workout_type: template.workout_type,
+      duration_minutes: template.duration_minutes?.toString() || "",
+      distance_km: template.distance_km?.toString() || "",
+      description: template.description || "",
+      objective: template.objective || "",
     });
     setIsDialogOpen(true);
 
-    // Load zones and blocks for this workout
+    // Load zones and blocks for this template
     if (userId) {
-      await loadZones(workout.discipline);
-      await loadWorkoutBlocks(workout.id);
+      await loadZones(template.discipline);
+      await loadWorkoutBlocks(template.id);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.scheduled_date) {
+    if (!formData.title) {
       toast({
         title: "Erreur",
-        description: "Veuillez remplir tous les champs obligatoires",
+        description: "Veuillez remplir le titre",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      const workoutData = {
+      const templateData = {
         user_id: userId,
         title: formData.title,
         discipline: formData.discipline,
         workout_type: formData.workout_type,
-        scheduled_date: formData.scheduled_date,
-        duration_minutes: formData.duration_minutes ? parseInt(formData.duration_minutes) : null,
-        distance_km: formData.distance_km ? parseFloat(formData.distance_km) : null,
+        scheduled_date: null, // NULL = template
+        duration_minutes: formData.duration_minutes
+          ? parseInt(formData.duration_minutes)
+          : null,
+        distance_km: formData.distance_km
+          ? parseFloat(formData.distance_km)
+          : null,
         description: formData.description || null,
         objective: formData.objective || null,
-        status: "planned" as const,
+        status: "draft" as const,
       };
 
       let workoutId: string;
 
-      if (editingWorkout) {
-        // Update existing workout
+      if (editingTemplate) {
+        // Update existing template
         const { error } = await supabase
           .from("workouts")
-          .update(workoutData)
-          .eq("id", editingWorkout.id);
+          .update(templateData)
+          .eq("id", editingTemplate.id);
 
         if (error) throw error;
 
-        workoutId = editingWorkout.id;
+        workoutId = editingTemplate.id;
 
         // Delete existing blocks
-        await supabase.from("workout_blocks").delete().eq("workout_id", workoutId);
+        await supabase
+          .from("workout_blocks")
+          .delete()
+          .eq("workout_id", workoutId);
 
         toast({
-          title: "Séance modifiée",
-          description: "La séance a été modifiée avec succès",
+          title: "Template modifié",
+          description: "Le template de séance a été modifié avec succès",
         });
       } else {
-        // Create new workout
+        // Create new template
         const { data, error } = await supabase
           .from("workouts")
-          .insert(workoutData)
+          .insert(templateData)
           .select()
           .single();
 
         if (error) throw error;
-        if (!data) throw new Error("Impossible de créer la séance");
+        if (!data) throw new Error("Impossible de créer le template");
 
         workoutId = data.id;
 
         toast({
-          title: "Séance créée",
-          description: "La séance a été créée avec succès",
+          title: "Template créé",
+          description: "Le template de séance a été créé avec succès",
         });
       }
 
@@ -425,7 +414,8 @@ export default function WorkoutsPage() {
           console.error("Erreur lors de la sauvegarde des blocs:", blocksError);
           toast({
             title: "Attention",
-            description: "La séance a été créée mais certains blocs n'ont pas pu être sauvegardés",
+            description:
+              "Le template a été créé mais certains blocs n'ont pas pu être sauvegardés",
             variant: "destructive",
           });
         }
@@ -433,12 +423,12 @@ export default function WorkoutsPage() {
 
       setIsDialogOpen(false);
       resetForm();
-      loadWorkouts();
+      loadTemplates();
     } catch (error: any) {
       console.error("Erreur lors de la sauvegarde:", error);
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de sauvegarder la séance",
+        description: error.message || "Impossible de sauvegarder le template",
         variant: "destructive",
       });
     }
@@ -456,99 +446,247 @@ export default function WorkoutsPage() {
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="mb-2">Séances d'entraînement</h1>
-          <p className="text-sub">Planifiez et suivez vos entraînements</p>
+          <h1 className="mb-2">Bibliothèque de séances</h1>
+          <p className="text-sub">Créez des templates de séances réutilisables pour votre calendrier</p>
         </div>
         <Button
           onClick={openCreateDialog}
           className="bg-accent-500 hover:bg-accent-600 text-neutral-900"
         >
           <Plus className="w-5 h-5 mr-2" />
-          Nouvelle séance
+          Nouveau template
         </Button>
       </div>
 
-      {workouts.length === 0 ? (
+      {templates.length === 0 ? (
         <Card className="p-12 text-center">
-          <Calendar className="w-16 h-16 mx-auto mb-4 text-neutral-400" />
-          <h3 className="mb-2">Aucune séance planifiée</h3>
+          <BookOpen className="w-16 h-16 mx-auto mb-4 text-neutral-400" />
+          <h3 className="mb-2">Aucun template de séance</h3>
           <p className="text-sub mb-6">
-            Commencez par créer votre première séance d'entraînement
+            Créez des templates de séances réutilisables que vous pourrez ajouter à votre calendrier
           </p>
           <Button
             onClick={openCreateDialog}
             className="bg-accent-500 hover:bg-accent-600 text-neutral-900"
           >
             <Plus className="w-5 h-5 mr-2" />
-            Créer une séance
+            Créer un template
           </Button>
         </Card>
       ) : (
-        <div className="grid gap-4">
-          {workouts.map((workout) => (
-            <Card key={workout.id} className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        disciplineColors[workout.discipline]
-                      }`}
-                    >
-                      {disciplineLabels[workout.discipline]}
-                    </span>
-                    <span className="px-3 py-1 rounded-full text-sm bg-neutral-100 text-neutral-700">
-                      {workoutTypeLabels[workout.workout_type]}
-                    </span>
-                  </div>
+        <div className="space-y-8">
+          {/* Course à pied */}
+          {templates.filter((t) => t.discipline === "running").length > 0 && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-neutral-200 text-neutral-800">
+                  Course à pied
+                </span>
+                <span className="text-sm text-sub">
+                  ({templates.filter((t) => t.discipline === "running").length})
+                </span>
+              </h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {templates
+                  .filter((t) => t.discipline === "running")
+                  .map((template) => (
+                    <Card key={template.id} className="p-6 hover:shadow-lg transition-shadow">
+                      <div className="flex flex-col h-full">
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="px-3 py-1 rounded-full text-sm bg-neutral-100 text-neutral-700">
+                            {workoutTypeLabels[template.workout_type]}
+                          </span>
+                        </div>
 
-                  <h3 className="mb-2">{workout.title}</h3>
+                        <h3 className="mb-3 flex-1">{template.title}</h3>
 
-                  <div className="flex items-center gap-4 text-sm text-sub mb-3">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      {formatDate(workout.scheduled_date)}
-                    </div>
-                    {workout.duration_minutes && (
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {workout.duration_minutes} min
+                        <div className="flex items-center gap-4 text-sm text-sub mb-4">
+                          {template.duration_minutes && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              {template.duration_minutes} min
+                            </div>
+                          )}
+                          {template.distance_km && (
+                            <div className="flex items-center gap-1">
+                              <Ruler className="w-4 h-4" />
+                              {template.distance_km} km
+                            </div>
+                          )}
+                        </div>
+
+                        {template.objective && (
+                          <p className="text-sm text-sub mb-4 line-clamp-2">
+                            <strong>Objectif :</strong> {template.objective}
+                          </p>
+                        )}
+
+                        <div className="flex items-center gap-2 mt-auto pt-4 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => openEditDialog(template)}
+                          >
+                            <Edit className="w-4 h-4 mr-2" />
+                            Modifier
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteTemplate(template.id)}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </div>
                       </div>
-                    )}
-                    {workout.distance_km && (
-                      <div className="flex items-center gap-1">
-                        <Ruler className="w-4 h-4" />
-                        {workout.distance_km} km
-                      </div>
-                    )}
-                  </div>
-
-                  {workout.objective && (
-                    <p className="text-sm text-sub">
-                      <strong>Objectif :</strong> {workout.objective}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openEditDialog(workout)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => deleteWorkout(workout.id)}
-                  >
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </Button>
-                </div>
+                    </Card>
+                  ))}
               </div>
-            </Card>
-          ))}
+            </div>
+          )}
+
+          {/* Vélo */}
+          {templates.filter((t) => t.discipline === "cycling").length > 0 && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-neutral-900 text-white">
+                  Vélo
+                </span>
+                <span className="text-sm text-sub">
+                  ({templates.filter((t) => t.discipline === "cycling").length})
+                </span>
+              </h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {templates
+                  .filter((t) => t.discipline === "cycling")
+                  .map((template) => (
+                    <Card key={template.id} className="p-6 hover:shadow-lg transition-shadow">
+                      <div className="flex flex-col h-full">
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="px-3 py-1 rounded-full text-sm bg-neutral-100 text-neutral-700">
+                            {workoutTypeLabels[template.workout_type]}
+                          </span>
+                        </div>
+
+                        <h3 className="mb-3 flex-1">{template.title}</h3>
+
+                        <div className="flex items-center gap-4 text-sm text-sub mb-4">
+                          {template.duration_minutes && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              {template.duration_minutes} min
+                            </div>
+                          )}
+                          {template.distance_km && (
+                            <div className="flex items-center gap-1">
+                              <Ruler className="w-4 h-4" />
+                              {template.distance_km} km
+                            </div>
+                          )}
+                        </div>
+
+                        {template.objective && (
+                          <p className="text-sm text-sub mb-4 line-clamp-2">
+                            <strong>Objectif :</strong> {template.objective}
+                          </p>
+                        )}
+
+                        <div className="flex items-center gap-2 mt-auto pt-4 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => openEditDialog(template)}
+                          >
+                            <Edit className="w-4 h-4 mr-2" />
+                            Modifier
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteTemplate(template.id)}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Natation */}
+          {templates.filter((t) => t.discipline === "swimming").length > 0 && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                  Natation
+                </span>
+                <span className="text-sm text-sub">
+                  ({templates.filter((t) => t.discipline === "swimming").length})
+                </span>
+              </h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {templates
+                  .filter((t) => t.discipline === "swimming")
+                  .map((template) => (
+                    <Card key={template.id} className="p-6 hover:shadow-lg transition-shadow">
+                      <div className="flex flex-col h-full">
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="px-3 py-1 rounded-full text-sm bg-neutral-100 text-neutral-700">
+                            {workoutTypeLabels[template.workout_type]}
+                          </span>
+                        </div>
+
+                        <h3 className="mb-3 flex-1">{template.title}</h3>
+
+                        <div className="flex items-center gap-4 text-sm text-sub mb-4">
+                          {template.duration_minutes && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              {template.duration_minutes} min
+                            </div>
+                          )}
+                          {template.distance_km && (
+                            <div className="flex items-center gap-1">
+                              <Ruler className="w-4 h-4" />
+                              {template.distance_km} km
+                            </div>
+                          )}
+                        </div>
+
+                        {template.objective && (
+                          <p className="text-sm text-sub mb-4 line-clamp-2">
+                            <strong>Objectif :</strong> {template.objective}
+                          </p>
+                        )}
+
+                        <div className="flex items-center gap-2 mt-auto pt-4 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => openEditDialog(template)}
+                          >
+                            <Edit className="w-4 h-4 mr-2" />
+                            Modifier
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteTemplate(template.id)}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -557,10 +695,10 @@ export default function WorkoutsPage() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingWorkout ? "Modifier la séance" : "Nouvelle séance"}
+              {editingTemplate ? "Modifier le template" : "Nouveau template"}
             </DialogTitle>
             <DialogDescription>
-              Configurez les détails de votre séance d'entraînement
+              Créez un template de séance réutilisable pour votre calendrier
             </DialogDescription>
           </DialogHeader>
 
@@ -588,7 +726,9 @@ export default function WorkoutsPage() {
                 </Label>
                 <Select
                   value={formData.discipline}
-                  onValueChange={async (value: "running" | "cycling" | "swimming") => {
+                  onValueChange={async (
+                    value: "running" | "cycling" | "swimming"
+                  ) => {
                     setFormData({ ...formData, discipline: value });
                     // Reload zones when discipline changes
                     if (userId) {
@@ -614,7 +754,13 @@ export default function WorkoutsPage() {
                 <Select
                   value={formData.workout_type}
                   onValueChange={(
-                    value: "interval" | "endurance" | "tempo" | "recovery" | "race" | "test"
+                    value:
+                      | "interval"
+                      | "endurance"
+                      | "tempo"
+                      | "recovery"
+                      | "race"
+                      | "test"
                   ) => setFormData({ ...formData, workout_type: value })}
                 >
                   <SelectTrigger className="mt-2">
@@ -630,22 +776,6 @@ export default function WorkoutsPage() {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-
-            <div>
-              <Label htmlFor="scheduled_date">
-                Date <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="scheduled_date"
-                type="date"
-                value={formData.scheduled_date}
-                onChange={(e) =>
-                  setFormData({ ...formData, scheduled_date: e.target.value })
-                }
-                required
-                className="mt-2"
-              />
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
@@ -720,7 +850,9 @@ export default function WorkoutsPage() {
               {workoutBlocks.length > 0 && (
                 <div className="space-y-2 mb-4">
                   {workoutBlocks.map((block, index) => {
-                    const zone = availableZones.find((z) => z.id === block.zone_id);
+                    const zone = availableZones.find(
+                      (z) => z.id === block.zone_id
+                    );
                     return (
                       <div
                         key={index}
@@ -729,7 +861,9 @@ export default function WorkoutsPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">
-                              {block.repetitions > 1 ? `${block.repetitions}x ` : ""}
+                              {block.repetitions > 1
+                                ? `${block.repetitions}x `
+                                : ""}
                               {blockTypeLabels[block.block_type]}
                             </span>
                             {zone && (
@@ -744,8 +878,12 @@ export default function WorkoutsPage() {
                             {block.duration_minutes && (
                               <span>{block.duration_minutes} min</span>
                             )}
-                            {block.distance_km && <span>{block.distance_km} km</span>}
-                            {block.notes && <span className="italic">{block.notes}</span>}
+                            {block.distance_km && (
+                              <span>{block.distance_km} km</span>
+                            )}
+                            {block.notes && (
+                              <span className="italic">{block.notes}</span>
+                            )}
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -779,8 +917,13 @@ export default function WorkoutsPage() {
                     <Label htmlFor="block_type">Type de bloc</Label>
                     <Select
                       value={blockFormData.block_type}
-                      onValueChange={(value: "warmup" | "main" | "recovery" | "cooldown") =>
-                        setBlockFormData({ ...blockFormData, block_type: value })
+                      onValueChange={(
+                        value: "warmup" | "main" | "recovery" | "cooldown"
+                      ) =>
+                        setBlockFormData({
+                          ...blockFormData,
+                          block_type: value,
+                        })
                       }
                     >
                       <SelectTrigger className="mt-1">
@@ -790,7 +933,9 @@ export default function WorkoutsPage() {
                         <SelectItem value="warmup">Échauffement</SelectItem>
                         <SelectItem value="main">Bloc principal</SelectItem>
                         <SelectItem value="recovery">Récupération</SelectItem>
-                        <SelectItem value="cooldown">Retour au calme</SelectItem>
+                        <SelectItem value="cooldown">
+                          Retour au calme
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -877,7 +1022,10 @@ export default function WorkoutsPage() {
                     id="block_notes"
                     value={blockFormData.notes}
                     onChange={(e) =>
-                      setBlockFormData({ ...blockFormData, notes: e.target.value })
+                      setBlockFormData({
+                        ...blockFormData,
+                        notes: e.target.value,
+                      })
                     }
                     placeholder="Récupération active entre les répétitions..."
                     className="mt-1"
@@ -892,7 +1040,9 @@ export default function WorkoutsPage() {
                   className="w-full"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  {editingBlockIndex !== null ? "Modifier le bloc" : "Ajouter un bloc"}
+                  {editingBlockIndex !== null
+                    ? "Modifier le bloc"
+                    : "Ajouter un bloc"}
                 </Button>
               </div>
             </div>
@@ -909,7 +1059,7 @@ export default function WorkoutsPage() {
                 type="submit"
                 className="bg-accent-500 hover:bg-accent-600 text-neutral-900"
               >
-                {editingWorkout ? "Modifier" : "Créer"}
+                {editingTemplate ? "Modifier" : "Créer"}
               </Button>
             </div>
           </form>

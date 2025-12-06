@@ -1,20 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -22,26 +10,85 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isToday } from "date-fns";
+import { supabase } from "@/lib/supabase";
+import {
+  eachDayOfInterval,
+  endOfMonth,
+  format,
+  isPast,
+  isSameDay,
+  isSameMonth,
+  isToday,
+  startOfDay,
+  startOfMonth,
+} from "date-fns";
 import { fr } from "date-fns/locale";
+import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface Workout {
   id: string;
   title: string;
   discipline: "running" | "cycling" | "swimming";
-  workout_type: "interval" | "endurance" | "tempo" | "recovery" | "race" | "test";
+  workout_type:
+    | "interval"
+    | "endurance"
+    | "tempo"
+    | "recovery"
+    | "race"
+    | "test";
   scheduled_date: string;
   duration_minutes: number | null;
   distance_km: number | null;
+  description: string | null;
+  objective: string | null;
   status: "planned" | "completed" | "cancelled" | "draft";
 }
 
+interface WorkoutTemplate {
+  id: string;
+  title: string;
+  discipline: "running" | "cycling" | "swimming";
+  workout_type:
+    | "interval"
+    | "endurance"
+    | "tempo"
+    | "recovery"
+    | "race"
+    | "test";
+  duration_minutes: number | null;
+  distance_km: number | null;
+  description: string | null;
+  objective: string | null;
+}
+
+interface WorkoutBlock {
+  id: string;
+  workout_id: string;
+  block_order: number;
+  block_type: "warmup" | "main" | "recovery" | "cooldown";
+  duration_minutes: number | null;
+  distance_km: number | null;
+  zone_id: string | null;
+  repetitions: number;
+  notes: string | null;
+}
+
 const disciplineColors = {
-  running: "bg-green-500",
-  cycling: "bg-blue-500",
-  swimming: "bg-cyan-500",
+  running: "bg-neutral-400",
+  cycling: "bg-neutral-900",
+  swimming: "bg-blue-500",
 };
 
 const disciplineLabels = {
@@ -59,20 +106,38 @@ const workoutTypeLabels = {
   test: "Test",
 };
 
+// Helper function to get workout color based on status
+const getWorkoutColor = (workout: Workout) => {
+  if (workout.status === "completed") {
+    return "bg-green-500";
+  }
+  return disciplineColors[workout.discipline];
+};
+
 export default function CalendarPage() {
   const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [userId, setUserId] = useState<string>("");
+  const [useTemplate, setUseTemplate] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
     title: "",
     discipline: "running" as "running" | "cycling" | "swimming",
-    workout_type: "endurance" as "interval" | "endurance" | "tempo" | "recovery" | "race" | "test",
+    workout_type: "endurance" as
+      | "interval"
+      | "endurance"
+      | "tempo"
+      | "recovery"
+      | "race"
+      | "test",
     scheduled_date: "",
     duration_minutes: "",
     distance_km: "",
@@ -82,6 +147,7 @@ export default function CalendarPage() {
 
   useEffect(() => {
     loadWorkouts();
+    loadTemplates();
   }, [currentDate]);
 
   const loadWorkouts = async () => {
@@ -97,10 +163,12 @@ export default function CalendarPage() {
       const start = startOfMonth(currentDate);
       const end = endOfMonth(currentDate);
 
+      // Load only scheduled workouts (scheduled_date IS NOT NULL)
       const { data, error } = await supabase
         .from("workouts")
         .select("*")
         .eq("user_id", session.user.id)
+        .not("scheduled_date", "is", null)
         .gte("scheduled_date", start.toISOString())
         .lte("scheduled_date", end.toISOString())
         .order("scheduled_date", { ascending: true });
@@ -120,12 +188,40 @@ export default function CalendarPage() {
     }
   };
 
+  const loadTemplates = async () => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) return;
+
+      // Load templates (scheduled_date IS NULL)
+      const { data, error } = await supabase
+        .from("workouts")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .is("scheduled_date", null)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setTemplates(data || []);
+    } catch (error: any) {
+      console.error("Erreur lors du chargement des templates:", error);
+    }
+  };
+
   const previousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
+    setCurrentDate(
+      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1)
+    );
   };
 
   const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
+    setCurrentDate(
+      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1)
+    );
   };
 
   const getDaysInMonth = () => {
@@ -151,6 +247,9 @@ export default function CalendarPage() {
       description: "",
       objective: "",
     });
+    setUseTemplate(false);
+    setSelectedTemplateId("");
+    setEditingWorkout(null);
   };
 
   const openCreateDialog = (date: Date) => {
@@ -160,6 +259,81 @@ export default function CalendarPage() {
       scheduled_date: format(date, "yyyy-MM-dd"),
     }));
     setIsDialogOpen(true);
+  };
+
+  const openEditDialog = (workout: Workout, e: React.MouseEvent) => {
+    e.stopPropagation(); // Empêche le clic du jour
+    setEditingWorkout(workout);
+    setFormData({
+      title: workout.title,
+      discipline: workout.discipline,
+      workout_type: workout.workout_type,
+      scheduled_date: workout.scheduled_date.split("T")[0],
+      duration_minutes: workout.duration_minutes?.toString() || "",
+      distance_km: workout.distance_km?.toString() || "",
+      description: workout.description || "",
+      objective: workout.objective || "",
+    });
+    setUseTemplate(false);
+    setIsDialogOpen(true);
+  };
+
+  const handleTemplateSelect = async (templateId: string) => {
+    setSelectedTemplateId(templateId);
+
+    if (!templateId) {
+      resetForm();
+      setFormData((prev) => ({
+        ...prev,
+        scheduled_date: formData.scheduled_date,
+      }));
+      return;
+    }
+
+    const template = templates.find((t) => t.id === templateId);
+    if (template) {
+      setFormData({
+        title: template.title,
+        discipline: template.discipline,
+        workout_type: template.workout_type,
+        scheduled_date: formData.scheduled_date,
+        duration_minutes: template.duration_minutes?.toString() || "",
+        distance_km: template.distance_km?.toString() || "",
+        description: template.description || "",
+        objective: template.objective || "",
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!editingWorkout) return;
+
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cette séance ?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("workouts")
+        .delete()
+        .eq("id", editingWorkout.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Séance supprimée",
+        description: "La séance a été supprimée avec succès",
+      });
+
+      setIsDialogOpen(false);
+      resetForm();
+      loadWorkouts();
+    } catch (error: any) {
+      console.error("Erreur lors de la suppression:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la séance",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -181,23 +355,69 @@ export default function CalendarPage() {
         discipline: formData.discipline,
         workout_type: formData.workout_type,
         scheduled_date: formData.scheduled_date,
-        duration_minutes: formData.duration_minutes ? parseInt(formData.duration_minutes) : null,
-        distance_km: formData.distance_km ? parseFloat(formData.distance_km) : null,
+        duration_minutes: formData.duration_minutes
+          ? parseInt(formData.duration_minutes)
+          : null,
+        distance_km: formData.distance_km
+          ? parseFloat(formData.distance_km)
+          : null,
         description: formData.description || null,
         objective: formData.objective || null,
         status: "planned" as const,
       };
 
-      const { error } = await supabase
-        .from("workouts")
-        .insert(workoutData);
+      if (editingWorkout) {
+        // Update existing workout
+        const { error } = await supabase
+          .from("workouts")
+          .update(workoutData)
+          .eq("id", editingWorkout.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Séance créée",
-        description: "La séance a été créée avec succès",
-      });
+        toast({
+          title: "Séance modifiée",
+          description: "La séance a été modifiée avec succès",
+        });
+      } else {
+        // Create the workout
+        const { data: newWorkout, error } = await supabase
+          .from("workouts")
+          .insert(workoutData)
+          .select()
+          .single();
+
+        if (error) throw error;
+        if (!newWorkout) throw new Error("Impossible de créer la séance");
+
+        // If using a template, copy its blocks
+        if (useTemplate && selectedTemplateId) {
+          const { data: templateBlocks, error: blocksError } = await supabase
+            .from("workout_blocks")
+            .select("*")
+            .eq("workout_id", selectedTemplateId);
+
+          if (!blocksError && templateBlocks && templateBlocks.length > 0) {
+            const blocksToCreate = templateBlocks.map((block) => ({
+              workout_id: newWorkout.id,
+              block_order: block.block_order,
+              block_type: block.block_type,
+              duration_minutes: block.duration_minutes,
+              distance_km: block.distance_km,
+              zone_id: block.zone_id,
+              repetitions: block.repetitions,
+              notes: block.notes,
+            }));
+
+            await supabase.from("workout_blocks").insert(blocksToCreate);
+          }
+        }
+
+        toast({
+          title: "Séance créée",
+          description: "La séance a été créée avec succès",
+        });
+      }
 
       setIsDialogOpen(false);
       resetForm();
@@ -250,25 +470,10 @@ export default function CalendarPage() {
             {format(currentDate, "MMMM yyyy", { locale: fr })}
           </h2>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={previousMonth}
-            >
+            <Button variant="outline" size="sm" onClick={previousMonth}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentDate(new Date())}
-            >
-              Aujourd'hui
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={nextMonth}
-            >
+            <Button variant="outline" size="sm" onClick={nextMonth}>
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
@@ -296,16 +501,25 @@ export default function CalendarPage() {
             const dayWorkouts = getWorkoutsForDay(day);
             const isCurrentMonth = isSameMonth(day, currentDate);
             const isTodayDate = isToday(day);
+            const isPastDate = isPast(startOfDay(day)) && !isTodayDate;
 
             return (
               <div
                 key={day.toISOString()}
-                className={`min-h-[100px] p-2 border rounded-lg transition-colors cursor-pointer hover:bg-neutral-50 ${
-                  isTodayDate ? "bg-accent-50 border-accent-500" : "border-neutral-200"
+                className={`min-h-[100px] p-2 border rounded-lg transition-colors ${
+                  isPastDate
+                    ? "cursor-default opacity-60"
+                    : "cursor-pointer hover:bg-neutral-50"
+                } ${
+                  isTodayDate
+                    ? "bg-accent-50 border-accent-500"
+                    : "border-neutral-200"
                 } ${!isCurrentMonth ? "opacity-50" : ""}`}
                 onClick={() => {
-                  setSelectedDate(day);
-                  openCreateDialog(day);
+                  if (!isPastDate) {
+                    setSelectedDate(day);
+                    openCreateDialog(day);
+                  }
                 }}
               >
                 <div className="flex justify-between items-start mb-1">
@@ -327,10 +541,19 @@ export default function CalendarPage() {
                   {dayWorkouts.slice(0, 3).map((workout) => (
                     <div
                       key={workout.id}
-                      className={`text-xs p-1 rounded ${
-                        disciplineColors[workout.discipline]
-                      } text-white truncate`}
+                      className={`text-xs p-1 rounded ${getWorkoutColor(
+                        workout
+                      )} text-white truncate ${
+                        isPastDate
+                          ? "cursor-default opacity-70"
+                          : "hover:opacity-80 transition-opacity cursor-pointer"
+                      }`}
                       title={workout.title}
+                      onClick={(e) => {
+                        if (!isPastDate) {
+                          openEditDialog(workout, e);
+                        }
+                      }}
                     >
                       {workout.title}
                     </div>
@@ -356,60 +579,154 @@ export default function CalendarPage() {
           {getWorkoutsForDay(selectedDate).length === 0 ? (
             <div className="text-center py-8">
               <p className="text-sub mb-4">Aucune séance planifiée ce jour</p>
-              <Button
-                onClick={() => openCreateDialog(selectedDate)}
-                className="bg-accent-500 hover:bg-accent-600 text-neutral-900"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Ajouter une séance
-              </Button>
+              {!isPast(startOfDay(selectedDate)) || isToday(selectedDate) ? (
+                <Button
+                  onClick={() => openCreateDialog(selectedDate)}
+                  className="bg-accent-500 hover:bg-accent-600 text-neutral-900"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Ajouter une séance
+                </Button>
+              ) : (
+                <p className="text-sm text-neutral-500">
+                  Vous ne pouvez pas ajouter de séance dans le passé
+                </p>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
-              {getWorkoutsForDay(selectedDate).map((workout) => (
-                <div
-                  key={workout.id}
-                  className="flex items-center gap-4 p-4 bg-neutral-50 rounded-lg"
-                >
+              {getWorkoutsForDay(selectedDate).map((workout) => {
+                const isSelectedDatePast =
+                  isPast(startOfDay(selectedDate)) && !isToday(selectedDate);
+                return (
                   <div
-                    className={`w-1 h-12 rounded ${
-                      disciplineColors[workout.discipline]
+                    key={workout.id}
+                    className={`flex items-center gap-4 p-4 bg-neutral-50 rounded-lg ${
+                      isSelectedDatePast
+                        ? "cursor-default opacity-70"
+                        : "cursor-pointer hover:bg-neutral-100 transition-colors"
                     }`}
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge className={disciplineColors[workout.discipline]}>
-                        {disciplineLabels[workout.discipline]}
-                      </Badge>
-                      <h4 className="font-semibold">{workout.title}</h4>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-sub">
-                      {workout.duration_minutes && (
-                        <span>{workout.duration_minutes} min</span>
-                      )}
-                      {workout.distance_km && (
-                        <span>{workout.distance_km} km</span>
-                      )}
+                    onClick={(e) => {
+                      if (!isSelectedDatePast) {
+                        openEditDialog(workout, e);
+                      }
+                    }}
+                  >
+                    <div
+                      className={`w-1 h-12 rounded ${getWorkoutColor(workout)}`}
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge className={getWorkoutColor(workout)}>
+                          {disciplineLabels[workout.discipline]}
+                        </Badge>
+                        <h4 className="font-semibold">{workout.title}</h4>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-sub">
+                        {workout.duration_minutes && (
+                          <span>{workout.duration_minutes} min</span>
+                        )}
+                        {workout.distance_km && (
+                          <span>{workout.distance_km} km</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </Card>
       )}
 
-      {/* Dialog de création de séance */}
+      {/* Dialog de création/édition de séance */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Nouvelle séance</DialogTitle>
+            <DialogTitle>
+              {editingWorkout ? "Modifier la séance" : "Nouvelle séance"}
+            </DialogTitle>
             <DialogDescription>
-              Configurez les détails de votre séance d'entraînement
+              {editingWorkout
+                ? "Modifiez les détails de votre séance"
+                : "Créez une nouvelle séance ou utilisez un template existant"}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Template Selection - Only for new workouts */}
+            {!editingWorkout && (
+              <div className="border-b pb-4">
+                <div className="flex items-center gap-4 mb-4">
+                  <Button
+                    type="button"
+                    variant={!useTemplate ? "default" : "outline"}
+                    onClick={() => {
+                      setUseTemplate(false);
+                      resetForm();
+                      setFormData((prev) => ({
+                        ...prev,
+                        scheduled_date: formData.scheduled_date,
+                      }));
+                    }}
+                    className={
+                      !useTemplate
+                        ? "bg-accent-500 hover:bg-accent-600 text-neutral-900"
+                        : ""
+                    }
+                  >
+                    Nouvelle séance
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={useTemplate ? "default" : "outline"}
+                    onClick={() => setUseTemplate(true)}
+                    className={
+                      useTemplate
+                        ? "bg-accent-500 hover:bg-accent-600 text-neutral-900"
+                        : ""
+                    }
+                  >
+                    Utiliser un template
+                  </Button>
+                </div>
+
+                {useTemplate && (
+                  <div>
+                    <Label htmlFor="template">Sélectionner un template</Label>
+                    <Select
+                      value={selectedTemplateId}
+                      onValueChange={handleTemplateSelect}
+                    >
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Choisissez un template..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templates.length === 0 ? (
+                          <SelectItem value="none" disabled>
+                            Aucun template disponible
+                          </SelectItem>
+                        ) : (
+                          templates.map((template) => (
+                            <SelectItem key={template.id} value={template.id}>
+                              {template.title} -{" "}
+                              {disciplineLabels[template.discipline]}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    {templates.length === 0 && (
+                      <p className="text-sm text-sub mt-2">
+                        Créez d'abord des templates dans la page "Séances"
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Form fields */}
             <div>
               <Label htmlFor="title">
                 Titre <span className="text-red-500">*</span>
@@ -433,7 +750,9 @@ export default function CalendarPage() {
                 </Label>
                 <Select
                   value={formData.discipline}
-                  onValueChange={(value: "running" | "cycling" | "swimming") => {
+                  onValueChange={(
+                    value: "running" | "cycling" | "swimming"
+                  ) => {
                     setFormData({ ...formData, discipline: value });
                   }}
                 >
@@ -455,7 +774,13 @@ export default function CalendarPage() {
                 <Select
                   value={formData.workout_type}
                   onValueChange={(
-                    value: "interval" | "endurance" | "tempo" | "recovery" | "race" | "test"
+                    value:
+                      | "interval"
+                      | "endurance"
+                      | "tempo"
+                      | "recovery"
+                      | "race"
+                      | "test"
                   ) => setFormData({ ...formData, workout_type: value })}
                 >
                   <SelectTrigger className="mt-2">
@@ -551,6 +876,17 @@ export default function CalendarPage() {
             </div>
 
             <div className="flex gap-4 justify-end pt-4 border-t">
+              {editingWorkout && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleDelete}
+                  className="mr-auto"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Supprimer
+                </Button>
+              )}
               <Button
                 type="button"
                 variant="outline"
@@ -562,7 +898,7 @@ export default function CalendarPage() {
                 type="submit"
                 className="bg-accent-500 hover:bg-accent-600 text-neutral-900"
               >
-                Créer
+                {editingWorkout ? "Modifier" : "Créer"}
               </Button>
             </div>
           </form>
