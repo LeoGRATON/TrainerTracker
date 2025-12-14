@@ -122,6 +122,7 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isChoiceDialogOpen, setIsChoiceDialogOpen] = useState(false);
   const [userId, setUserId] = useState<string>("");
   const [useTemplate, setUseTemplate] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
@@ -252,13 +253,29 @@ export default function CalendarPage() {
     setEditingWorkout(null);
   };
 
-  const openCreateDialog = (date: Date) => {
-    resetForm();
+  const openChoiceDialog = (date: Date) => {
+    setSelectedDate(date);
     setFormData((prev) => ({
       ...prev,
       scheduled_date: format(date, "yyyy-MM-dd"),
     }));
+    setIsChoiceDialogOpen(true);
+  };
+
+  const openCreateDialog = (fromTemplate: boolean) => {
+    setIsChoiceDialogOpen(false);
+    resetForm();
+    setFormData((prev) => ({
+      ...prev,
+      scheduled_date: formData.scheduled_date,
+    }));
+    setUseTemplate(fromTemplate);
     setIsDialogOpen(true);
+  };
+
+  const goBackToChoice = () => {
+    setIsDialogOpen(false);
+    setIsChoiceDialogOpen(true);
   };
 
   const openEditDialog = (workout: Workout, e: React.MouseEvent) => {
@@ -455,7 +472,7 @@ export default function CalendarPage() {
           <p className="text-sub">Visualisez et planifiez vos entraînements</p>
         </div>
         <Button
-          onClick={() => openCreateDialog(new Date())}
+          onClick={() => openChoiceDialog(new Date())}
           className="bg-accent-500 hover:bg-accent-600 text-neutral-900"
         >
           <Plus className="w-5 h-5 mr-2" />
@@ -517,8 +534,7 @@ export default function CalendarPage() {
                 } ${!isCurrentMonth ? "opacity-50" : ""}`}
                 onClick={() => {
                   if (!isPastDate) {
-                    setSelectedDate(day);
-                    openCreateDialog(day);
+                    openChoiceDialog(day);
                   }
                 }}
               >
@@ -581,7 +597,7 @@ export default function CalendarPage() {
               <p className="text-sub mb-4">Aucune séance planifiée ce jour</p>
               {!isPast(startOfDay(selectedDate)) || isToday(selectedDate) ? (
                 <Button
-                  onClick={() => openCreateDialog(selectedDate)}
+                  onClick={() => openChoiceDialog(selectedDate)}
                   className="bg-accent-500 hover:bg-accent-600 text-neutral-900"
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -639,6 +655,54 @@ export default function CalendarPage() {
         </Card>
       )}
 
+      {/* Dialog de choix: Template ou Nouvelle séance */}
+      <Dialog open={isChoiceDialogOpen} onOpenChange={setIsChoiceDialogOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Créer une séance</DialogTitle>
+            <DialogDescription>
+              Choisissez comment vous souhaitez créer votre séance
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 pt-4">
+            <Button
+              onClick={() => openCreateDialog(true)}
+              className="w-full h-auto py-4 flex-col items-start bg-accent-500 hover:bg-accent-600 text-neutral-900"
+              disabled={templates.length === 0}
+            >
+              <div className="font-semibold mb-1">Utiliser un template</div>
+              <div className="text-sm font-normal opacity-80">
+                {templates.length === 0
+                  ? "Aucun template disponible"
+                  : `Choisissez parmi ${templates.length} template${
+                      templates.length > 1 ? "s" : ""
+                    }`}
+              </div>
+            </Button>
+
+            <Button
+              onClick={() => openCreateDialog(false)}
+              className="w-full h-auto py-4 flex-col items-start"
+              variant="outline"
+            >
+              <div className="font-semibold mb-1">
+                Créer une nouvelle séance
+              </div>
+              <div className="text-sm font-normal text-sub">
+                Créez une séance personnalisée depuis le formulaire
+              </div>
+            </Button>
+          </div>
+
+          {templates.length === 0 && (
+            <p className="text-sm text-sub text-center pb-2">
+              Créez d'abord des templates dans la page "Séances"
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Dialog de création/édition de séance */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -649,79 +713,43 @@ export default function CalendarPage() {
             <DialogDescription>
               {editingWorkout
                 ? "Modifiez les détails de votre séance"
-                : "Créez une nouvelle séance ou utilisez un template existant"}
+                : useTemplate
+                ? "Sélectionnez un template et personnalisez votre séance"
+                : "Créez une séance personnalisée"}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Template Selection - Only for new workouts */}
-            {!editingWorkout && (
+            {!editingWorkout && useTemplate && (
               <div className="border-b pb-4">
-                <div className="flex items-center gap-4 mb-4">
-                  <Button
-                    type="button"
-                    variant={!useTemplate ? "default" : "outline"}
-                    onClick={() => {
-                      setUseTemplate(false);
-                      resetForm();
-                      setFormData((prev) => ({
-                        ...prev,
-                        scheduled_date: formData.scheduled_date,
-                      }));
-                    }}
-                    className={
-                      !useTemplate
-                        ? "bg-accent-500 hover:bg-accent-600 text-neutral-900"
-                        : ""
-                    }
-                  >
-                    Nouvelle séance
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={useTemplate ? "default" : "outline"}
-                    onClick={() => setUseTemplate(true)}
-                    className={
-                      useTemplate
-                        ? "bg-accent-500 hover:bg-accent-600 text-neutral-900"
-                        : ""
-                    }
-                  >
-                    Utiliser un template
-                  </Button>
-                </div>
-
-                {useTemplate && (
-                  <div>
-                    <Label htmlFor="template">Sélectionner un template</Label>
-                    <Select
-                      value={selectedTemplateId}
-                      onValueChange={handleTemplateSelect}
-                    >
-                      <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Choisissez un template..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {templates.length === 0 ? (
-                          <SelectItem value="none" disabled>
-                            Aucun template disponible
-                          </SelectItem>
-                        ) : (
-                          templates.map((template) => (
-                            <SelectItem key={template.id} value={template.id}>
-                              {template.title} -{" "}
-                              {disciplineLabels[template.discipline]}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                    {templates.length === 0 && (
-                      <p className="text-sm text-sub mt-2">
-                        Créez d'abord des templates dans la page "Séances"
-                      </p>
+                <Label htmlFor="template">Sélectionner un template</Label>
+                <Select
+                  value={selectedTemplateId}
+                  onValueChange={handleTemplateSelect}
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue placeholder="Choisissez un template..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {templates.length === 0 ? (
+                      <SelectItem value="none" disabled>
+                        Aucun template disponible
+                      </SelectItem>
+                    ) : (
+                      templates.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.title} -{" "}
+                          {disciplineLabels[template.discipline]}
+                        </SelectItem>
+                      ))
                     )}
-                  </div>
+                  </SelectContent>
+                </Select>
+                {templates.length === 0 && (
+                  <p className="text-sm text-sub mt-2">
+                    Créez d'abord des templates dans la page "Séances"
+                  </p>
                 )}
               </div>
             )}
@@ -890,9 +918,9 @@ export default function CalendarPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsDialogOpen(false)}
+                onClick={editingWorkout ? () => setIsDialogOpen(false) : goBackToChoice}
               >
-                Annuler
+                {editingWorkout ? "Annuler" : "Retour"}
               </Button>
               <Button
                 type="submit"
