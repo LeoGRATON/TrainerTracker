@@ -21,14 +21,20 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
-import { Clock, Edit, List, Plus, Ruler, Trash2, BookOpen } from "lucide-react";
+import { BookOpen, Clock, Edit, List, Plus, Ruler, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface WorkoutTemplate {
   id: string;
   title: string;
   discipline: "running" | "cycling" | "swimming";
-  workout_type: "interval" | "endurance" | "tempo" | "recovery" | "race" | "test";
+  workout_type:
+    | "interval"
+    | "endurance"
+    | "tempo"
+    | "recovery"
+    | "race"
+    | "test";
   duration_minutes: number | null;
   distance_km: number | null;
   description: string | null;
@@ -78,7 +84,11 @@ export default function WorkoutsPage() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string>("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<WorkoutTemplate | null>(null);
+  const [editingTemplate, setEditingTemplate] =
+    useState<WorkoutTemplate | null>(null);
+  const [selectedDiscipline, setSelectedDiscipline] = useState<
+    "running" | "cycling" | "swimming"
+  >("running");
 
   // Blocks management
   const [workoutBlocks, setWorkoutBlocks] = useState<WorkoutBlock[]>([]);
@@ -91,13 +101,21 @@ export default function WorkoutsPage() {
     repetitions: "1",
     notes: "",
   });
-  const [editingBlockIndex, setEditingBlockIndex] = useState<number | null>(null);
+  const [editingBlockIndex, setEditingBlockIndex] = useState<number | null>(
+    null
+  );
 
   // Form state
   const [formData, setFormData] = useState({
     title: "",
     discipline: "running" as "running" | "cycling" | "swimming",
-    workout_type: "endurance" as "interval" | "endurance" | "tempo" | "recovery" | "race" | "test",
+    workout_type: "endurance" as
+      | "interval"
+      | "endurance"
+      | "tempo"
+      | "recovery"
+      | "race"
+      | "test",
     duration_minutes: "",
     distance_km: "",
     description: "",
@@ -442,12 +460,24 @@ export default function WorkoutsPage() {
     );
   }
 
+  const filteredTemplates = templates.filter(
+    (t) => t.discipline === selectedDiscipline
+  );
+
+  const disciplines = [
+    { id: "running" as const, name: "Course à pied" },
+    { id: "cycling" as const, name: "Vélo" },
+    { id: "swimming" as const, name: "Natation" },
+  ];
+
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="mb-2">Bibliothèque de séances</h1>
-          <p className="text-sub">Créez des templates de séances réutilisables pour votre calendrier</p>
+          <p className="text-sub">
+            Créez des templates de séances réutilisables pour votre calendrier
+          </p>
         </div>
         <Button
           onClick={openCreateDialog}
@@ -458,237 +488,131 @@ export default function WorkoutsPage() {
         </Button>
       </div>
 
-      {templates.length === 0 ? (
-        <Card className="p-12 text-center">
-          <BookOpen className="w-16 h-16 mx-auto mb-4 text-neutral-400" />
-          <h3 className="mb-2">Aucun template de séance</h3>
-          <p className="text-sub mb-6">
-            Créez des templates de séances réutilisables que vous pourrez ajouter à votre calendrier
-          </p>
-          <Button
-            onClick={openCreateDialog}
-            className="bg-accent-500 hover:bg-accent-600 text-neutral-900"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Créer un template
-          </Button>
-        </Card>
-      ) : (
-        <div className="space-y-8">
-          {/* Course à pied */}
-          {templates.filter((t) => t.discipline === "running").length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-neutral-200 text-neutral-800">
-                  Course à pied
-                </span>
-                <span className="text-sm text-sub">
-                  ({templates.filter((t) => t.discipline === "running").length})
-                </span>
-              </h2>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {templates
-                  .filter((t) => t.discipline === "running")
-                  .map((template) => (
-                    <Card key={template.id} className="p-6 hover:shadow-lg transition-shadow">
-                      <div className="flex flex-col h-full">
-                        <div className="flex items-center gap-3 mb-3">
-                          <span className="px-3 py-1 rounded-full text-sm bg-neutral-100 text-neutral-700">
-                            {workoutTypeLabels[template.workout_type]}
-                          </span>
+      <div className="flex gap-6">
+        {/* Sidebar */}
+        <aside className="w-64 flex-shrink-0">
+          <div className="bg-white rounded-lg border border-neutral-200 p-4">
+            <h3 className="font-semibold mb-4 text-neutral-900">Sports</h3>
+            <nav className="space-y-2">
+              {disciplines.map((discipline) => {
+                return (
+                  <button
+                    key={discipline.id}
+                    onClick={() => setSelectedDiscipline(discipline.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-smooth ${
+                      selectedDiscipline === discipline.id
+                        ? "bg-accent-500 text-neutral-900 font-medium"
+                        : "text-neutral-600 hover:bg-neutral-100"
+                    }`}
+                  >
+                    <div
+                      style={{
+                        width: 20,
+                        height: 20,
+                        backgroundColor: "#000000",
+                        mask: `url(/icons/${discipline.id}.svg) no-repeat center / contain`,
+                        WebkitMask: `url(/icons/${discipline.id}.svg) no-repeat center / contain`,
+                      }}
+                    />
+                    <span>{discipline.name}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        </aside>
+
+        {/* Main content */}
+        <div className="flex-1">
+          {filteredTemplates.length === 0 ? (
+            <Card className="p-12 text-center">
+              <BookOpen className="w-16 h-16 mx-auto mb-4 text-neutral-400" />
+              <h3 className="mb-2">Aucun template de séance</h3>
+              <p className="text-sub mb-6">
+                Créez des templates de séances réutilisables que vous pourrez
+                ajouter à votre calendrier
+              </p>
+              <Button
+                onClick={openCreateDialog}
+                className="bg-accent-500 hover:bg-accent-600 text-neutral-900"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Créer un template
+              </Button>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {filteredTemplates.map((template) => (
+                <Card
+                  key={template.id}
+                  className="p-6 hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => openEditDialog(template)}
+                >
+                  <div className="flex items-center gap-6">
+                    {/* Type de séance */}
+                    <div className="flex-shrink-0">
+                      <span className="px-3 py-1 rounded-full text-sm bg-neutral-100 text-neutral-700">
+                        {workoutTypeLabels[template.workout_type]}
+                      </span>
+                    </div>
+
+                    {/* Titre */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="">{template.title}</h3>
+                      {template.objective && (
+                        <p className="text-sm text-sub line-clamp-1 mt-1">
+                          {template.objective}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Durée et distance */}
+                    <div className="flex items-center gap-6 text-sm text-sub flex-shrink-0">
+                      {template.duration_minutes && (
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          <span>{template.duration_minutes} min</span>
                         </div>
-
-                        <h3 className="mb-3 flex-1">{template.title}</h3>
-
-                        <div className="flex items-center gap-4 text-sm text-sub mb-4">
-                          {template.duration_minutes && (
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              {template.duration_minutes} min
-                            </div>
-                          )}
-                          {template.distance_km && (
-                            <div className="flex items-center gap-1">
-                              <Ruler className="w-4 h-4" />
-                              {template.distance_km} km
-                            </div>
-                          )}
+                      )}
+                      {template.distance_km && (
+                        <div className="flex items-center gap-2">
+                          <Ruler className="w-4 h-4" />
+                          <span>{template.distance_km} km</span>
                         </div>
+                      )}
+                    </div>
 
-                        {template.objective && (
-                          <p className="text-sm text-sub mb-4 line-clamp-2">
-                            <strong>Objectif :</strong> {template.objective}
-                          </p>
-                        )}
-
-                        <div className="flex items-center gap-2 mt-auto pt-4 border-t">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => openEditDialog(template)}
-                          >
-                            <Edit className="w-4 h-4 mr-2" />
-                            Modifier
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => deleteTemplate(template.id)}
-                          >
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {/* Vélo */}
-          {templates.filter((t) => t.discipline === "cycling").length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-neutral-900 text-white">
-                  Vélo
-                </span>
-                <span className="text-sm text-sub">
-                  ({templates.filter((t) => t.discipline === "cycling").length})
-                </span>
-              </h2>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {templates
-                  .filter((t) => t.discipline === "cycling")
-                  .map((template) => (
-                    <Card key={template.id} className="p-6 hover:shadow-lg transition-shadow">
-                      <div className="flex flex-col h-full">
-                        <div className="flex items-center gap-3 mb-3">
-                          <span className="px-3 py-1 rounded-full text-sm bg-neutral-100 text-neutral-700">
-                            {workoutTypeLabels[template.workout_type]}
-                          </span>
-                        </div>
-
-                        <h3 className="mb-3 flex-1">{template.title}</h3>
-
-                        <div className="flex items-center gap-4 text-sm text-sub mb-4">
-                          {template.duration_minutes && (
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              {template.duration_minutes} min
-                            </div>
-                          )}
-                          {template.distance_km && (
-                            <div className="flex items-center gap-1">
-                              <Ruler className="w-4 h-4" />
-                              {template.distance_km} km
-                            </div>
-                          )}
-                        </div>
-
-                        {template.objective && (
-                          <p className="text-sm text-sub mb-4 line-clamp-2">
-                            <strong>Objectif :</strong> {template.objective}
-                          </p>
-                        )}
-
-                        <div className="flex items-center gap-2 mt-auto pt-4 border-t">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => openEditDialog(template)}
-                          >
-                            <Edit className="w-4 h-4 mr-2" />
-                            Modifier
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => deleteTemplate(template.id)}
-                          >
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {/* Natation */}
-          {templates.filter((t) => t.discipline === "swimming").length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                  Natation
-                </span>
-                <span className="text-sm text-sub">
-                  ({templates.filter((t) => t.discipline === "swimming").length})
-                </span>
-              </h2>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {templates
-                  .filter((t) => t.discipline === "swimming")
-                  .map((template) => (
-                    <Card key={template.id} className="p-6 hover:shadow-lg transition-shadow">
-                      <div className="flex flex-col h-full">
-                        <div className="flex items-center gap-3 mb-3">
-                          <span className="px-3 py-1 rounded-full text-sm bg-neutral-100 text-neutral-700">
-                            {workoutTypeLabels[template.workout_type]}
-                          </span>
-                        </div>
-
-                        <h3 className="mb-3 flex-1">{template.title}</h3>
-
-                        <div className="flex items-center gap-4 text-sm text-sub mb-4">
-                          {template.duration_minutes && (
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              {template.duration_minutes} min
-                            </div>
-                          )}
-                          {template.distance_km && (
-                            <div className="flex items-center gap-1">
-                              <Ruler className="w-4 h-4" />
-                              {template.distance_km} km
-                            </div>
-                          )}
-                        </div>
-
-                        {template.objective && (
-                          <p className="text-sm text-sub mb-4 line-clamp-2">
-                            <strong>Objectif :</strong> {template.objective}
-                          </p>
-                        )}
-
-                        <div className="flex items-center gap-2 mt-auto pt-4 border-t">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => openEditDialog(template)}
-                          >
-                            <Edit className="w-4 h-4 mr-2" />
-                            Modifier
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => deleteTemplate(template.id)}
-                          >
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-              </div>
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditDialog(template);
+                        }}
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Modifier
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteTemplate(template.id);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
             </div>
           )}
         </div>
-      )}
+      </div>
 
       {/* Dialog de création/édition */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

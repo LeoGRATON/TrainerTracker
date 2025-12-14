@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -76,16 +76,12 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-lg p-8">
           <div className="flex justify-center mb-8">
-            <img
-              src="/logo/TrainerTracker.png"
-              alt="TriZone"
-              className="h-16"
-            />
+            <img src="/logo/logo-noir.png" alt="TrainerTracker" />
           </div>
 
           <h1 className="text-center mb-2">Inscription</h1>
           <p className="text-center text-sub mb-8">
-            Créez votre compte TriZone
+            Créez votre compte TrainerTracker
           </p>
 
           <form onSubmit={handleRegister} className="space-y-6">
@@ -129,9 +125,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <Label htmlFor="confirmPassword">
-                Confirmer le mot de passe
-              </Label>
+              <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
               <Input
                 id="confirmPassword"
                 type="password"

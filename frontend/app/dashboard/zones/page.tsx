@@ -15,6 +15,7 @@ interface Zone {
   name: string;
   percentage: [number, number];
   color: string;
+  bg: string;
 }
 
 const vmaZones: Zone[] = [
@@ -22,12 +23,37 @@ const vmaZones: Zone[] = [
     number: 1,
     name: "Récupération",
     percentage: [60, 70],
-    color: "bg-blue-500",
+    color: "text-blue-500",
+    bg: "bg-blue-500/10",
   },
-  { number: 2, name: "Endurance", percentage: [70, 80], color: "bg-green-500" },
-  { number: 3, name: "Tempo", percentage: [80, 90], color: "bg-yellow-500" },
-  { number: 4, name: "Seuil", percentage: [90, 95], color: "bg-orange-500" },
-  { number: 5, name: "VO2max", percentage: [95, 100], color: "bg-red-500" },
+  {
+    number: 2,
+    name: "Endurance",
+    percentage: [70, 80],
+    color: "text-green-500",
+    bg: "bg-green-500/10",
+  },
+  {
+    number: 3,
+    name: "Tempo",
+    percentage: [80, 90],
+    color: "text-yellow-500",
+    bg: "bg-yellow-500/10",
+  },
+  {
+    number: 4,
+    name: "Seuil",
+    percentage: [90, 95],
+    color: "text-orange-500",
+    bg: "bg-orange-500/10",
+  },
+  {
+    number: 5,
+    name: "VO2max",
+    percentage: [95, 100],
+    color: "text-red-500",
+    bg: "bg-red-500/10",
+  },
 ];
 
 const fcmaxZones: Zone[] = [
@@ -35,12 +61,37 @@ const fcmaxZones: Zone[] = [
     number: 1,
     name: "Récupération",
     percentage: [50, 60],
-    color: "bg-blue-500",
+    color: "text-blue-500",
+    bg: "bg-blue-500/10",
   },
-  { number: 2, name: "Endurance", percentage: [60, 70], color: "bg-green-500" },
-  { number: 3, name: "Tempo", percentage: [70, 80], color: "bg-yellow-500" },
-  { number: 4, name: "Seuil", percentage: [80, 90], color: "bg-orange-500" },
-  { number: 5, name: "VO2max", percentage: [90, 100], color: "bg-red-500" },
+  {
+    number: 2,
+    name: "Endurance",
+    percentage: [60, 70],
+    color: "text-green-500",
+    bg: "bg-green-500/10",
+  },
+  {
+    number: 3,
+    name: "Tempo",
+    percentage: [70, 80],
+    color: "text-yellow-500",
+    bg: "bg-yellow-500/10",
+  },
+  {
+    number: 4,
+    name: "Seuil",
+    percentage: [80, 90],
+    color: "text-orange-500",
+    bg: "bg-orange-500/10",
+  },
+  {
+    number: 5,
+    name: "VO2max",
+    percentage: [90, 100],
+    color: "text-red-500",
+    bg: "bg-red-500/10",
+  },
 ];
 
 const ftpZones: Zone[] = [
@@ -48,12 +99,37 @@ const ftpZones: Zone[] = [
     number: 1,
     name: "Récupération",
     percentage: [1, 55],
-    color: "bg-blue-500",
+    color: "text-blue-500",
+    bg: "bg-blue-500/10",
   },
-  { number: 2, name: "Endurance", percentage: [56, 75], color: "bg-green-500" },
-  { number: 3, name: "Tempo", percentage: [76, 90], color: "bg-yellow-500" },
-  { number: 4, name: "Seuil", percentage: [91, 105], color: "bg-orange-500" },
-  { number: 5, name: "VO2max", percentage: [106, 120], color: "bg-red-500" },
+  {
+    number: 2,
+    name: "Endurance",
+    percentage: [56, 75],
+    color: "text-green-500",
+    bg: "bg-green-500/10",
+  },
+  {
+    number: 3,
+    name: "Tempo",
+    percentage: [76, 90],
+    color: "text-yellow-500",
+    bg: "bg-yellow-500/10",
+  },
+  {
+    number: 4,
+    name: "Seuil",
+    percentage: [91, 105],
+    color: "text-orange-500",
+    bg: "bg-orange-500/10",
+  },
+  {
+    number: 5,
+    name: "VO2max",
+    percentage: [106, 120],
+    color: "text-red-500",
+    bg: "bg-red-500/10",
+  },
 ];
 
 const cssZones: Zone[] = [
@@ -61,17 +137,37 @@ const cssZones: Zone[] = [
     number: 1,
     name: "Récupération",
     percentage: [115, 125],
-    color: "bg-blue-500",
+    color: "text-blue-500",
+    bg: "bg-blue-500/10",
   },
   {
     number: 2,
     name: "Endurance",
     percentage: [105, 115],
-    color: "bg-green-500",
+    color: "text-green-500",
+    bg: "bg-green-500/10",
   },
-  { number: 3, name: "Tempo", percentage: [100, 105], color: "bg-yellow-500" },
-  { number: 4, name: "Seuil", percentage: [95, 100], color: "bg-orange-500" },
-  { number: 5, name: "Vitesse", percentage: [85, 95], color: "bg-red-500" },
+  {
+    number: 3,
+    name: "Tempo",
+    percentage: [100, 105],
+    color: "text-yellow-500",
+    bg: "bg-yellow-500/10",
+  },
+  {
+    number: 4,
+    name: "Seuil",
+    percentage: [95, 100],
+    color: "text-orange-500",
+    bg: "bg-orange-500/10",
+  },
+  {
+    number: 5,
+    name: "Vitesse",
+    percentage: [85, 95],
+    color: "text-red-500",
+    bg: "bg-red-500/10",
+  },
 ];
 
 export default function ZonesPage() {
@@ -241,14 +337,8 @@ export default function ZonesPage() {
       console.log("Zones insérées avec succès");
 
       toast({
-        title: "Zones calculées !",
-        description: `Vos zones de ${
-          discipline === "running"
-            ? "course"
-            : discipline === "cycling"
-            ? "vélo"
-            : "natation"
-        } ont été enregistrées.`,
+        title: "Zones enregistrées !",
+        description: `Vos zones d'entraînement ont été enregistrées avec succès.`,
       });
 
       if (type === "vma") setVmaCalculated(true);
@@ -284,21 +374,29 @@ export default function ZonesPage() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
+  // Convert seconds to min:sec format (MM:SS)
+  const secToMinSec = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.round(seconds % 60);
+    return `${minutes}:${secs.toString().padStart(2, "0")}`;
+  };
+
   return (
     <div>
       <div className="mb-8">
         <h1 className="mb-2">Zones d'Entraînement</h1>
-        <p className="text-sub">Configurez vos zones pour les 3 disciplines</p>
+        <p className="text-sub">Configurez vos zones d'entraînement</p>
       </div>
 
       <Tabs defaultValue="running" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="running">Course à pied</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="running">VMA</TabsTrigger>
+          <TabsTrigger value="fcmax">FC max</TabsTrigger>
           <TabsTrigger value="cycling">Vélo</TabsTrigger>
           <TabsTrigger value="swimming">Natation</TabsTrigger>
         </TabsList>
 
-        {/* Course à pied - VMA & FC max */}
+        {/* VMA */}
         <TabsContent value="running" className="space-y-6">
           {/* VMA Section */}
           <Card className="p-6">
@@ -332,7 +430,7 @@ export default function ZonesPage() {
                 onClick={() => saveMetric("vma", vma, "running")}
                 className="w-full bg-green-500 hover:bg-green-600"
               >
-                Calculer mes zones VMA
+                Enregistrer les zones
               </Button>
 
               {/* Help Section */}
@@ -379,37 +477,31 @@ export default function ZonesPage() {
 
           {/* Zones VMA */}
           {vma && parseFloat(vma) > 0 && (
-            <Card className="p-6">
-              <h3 className="mb-4">Vos zones VMA</h3>
-              <div className="space-y-3">
-                {calculateZoneValues(vma, vmaZones)?.map((zone) => (
-                  <div
-                    key={zone.number}
-                    className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg"
+            <div className="flex justify-between gap-6">
+              {calculateZoneValues(vma, vmaZones)?.map((zone) => (
+                <Card
+                  className={`${zone.bg} flex-1 p-6 border-transparent`}
+                  key={zone.number}
+                >
+                  <p className="subtitle text-gray-400">
+                    Zone{zone.number} - {zone.percentage[0]}%
+                  </p>
+                  <h3>{zone.name}</h3>
+                  <p
+                    className={`${zone.color} font-mango text-[2rem] font-semibold`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 ${zone.color} rounded-lg`}></div>
-                      <div>
-                        <p className="font-semibold">
-                          Zone {zone.number} - {zone.name}
-                        </p>
-                        <p className="text-sm text-sub">
-                          {zone.percentage[0]}% - {zone.percentage[1]}%
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold">
-                        {kmhToPace(parseFloat(zone.min))} -{" "}
-                        {kmhToPace(parseFloat(zone.max))} min/km
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
+                    {kmhToPace(parseFloat(zone.min))} -{" "}
+                    {kmhToPace(parseFloat(zone.max))}{" "}
+                    <span className=" text-[1rem] font-normal">min/km</span>
+                  </p>
+                </Card>
+              ))}
+            </div>
           )}
+        </TabsContent>
 
+        {/* FC max */}
+        <TabsContent value="fcmax" className="space-y-6">
           {/* FC max Section */}
           <Card className="p-6">
             <div className="flex items-center gap-3 mb-6">
@@ -442,7 +534,7 @@ export default function ZonesPage() {
                 onClick={() => saveMetric("fcmax", fcmax, "running")}
                 className="w-full bg-red-500 hover:bg-red-600"
               >
-                Calculer mes zones FC
+                Enregistrer les zones
               </Button>
 
               {/* Help Section */}
@@ -489,34 +581,25 @@ export default function ZonesPage() {
 
           {/* Zones FC max */}
           {fcmax && parseFloat(fcmax) > 0 && (
-            <Card className="p-6">
-              <h3 className="mb-4">Vos zones FC max</h3>
-              <div className="space-y-3">
-                {calculateZoneValues(fcmax, fcmaxZones)?.map((zone) => (
-                  <div
-                    key={zone.number}
-                    className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg"
+            <div className="flex justify-between gap-6">
+              {calculateZoneValues(fcmax, fcmaxZones)?.map((zone) => (
+                <Card
+                  className={`${zone.bg} flex-1 p-6 border-transparent`}
+                  key={zone.number}
+                >
+                  <p className="subtitle text-gray-400">
+                    Zone{zone.number} - {zone.percentage[0]}%
+                  </p>
+                  <h3>{zone.name}</h3>
+                  <p
+                    className={`${zone.color} font-mango text-[2rem] font-semibold`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 ${zone.color} rounded-lg`}></div>
-                      <div>
-                        <p className="font-semibold">
-                          Zone {zone.number} - {zone.name}
-                        </p>
-                        <p className="text-sm text-sub">
-                          {zone.percentage[0]}% - {zone.percentage[1]}%
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold">
-                        {zone.min} - {zone.max} bpm
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
+                    {zone.min} - {zone.max}{" "}
+                    <span className="text-[1rem] font-normal">bpm</span>
+                  </p>
+                </Card>
+              ))}
+            </div>
           )}
         </TabsContent>
 
@@ -580,7 +663,7 @@ export default function ZonesPage() {
                 onClick={() => saveMetric(metricType, ftp, "cycling")}
                 className="w-full bg-blue-500 hover:bg-blue-600"
               >
-                Calculer mes zones
+                Enregistrer les zones
               </Button>
 
               {/* Help Section */}
@@ -640,34 +723,25 @@ export default function ZonesPage() {
 
           {/* Zones FTP */}
           {ftp && parseFloat(ftp) > 0 && (
-            <Card className="p-6">
-              <h3 className="mb-4">Vos zones de puissance</h3>
-              <div className="space-y-3">
-                {calculateZoneValues(ftp, ftpZones)?.map((zone) => (
-                  <div
-                    key={zone.number}
-                    className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg"
+            <div className="flex justify-between gap-6">
+              {calculateZoneValues(ftp, ftpZones)?.map((zone) => (
+                <Card
+                  className={`${zone.bg} flex-1 p-6 border-transparent`}
+                  key={zone.number}
+                >
+                  <p className="subtitle text-gray-400">
+                    Zone{zone.number} - {zone.percentage[0]}%
+                  </p>
+                  <h3>{zone.name}</h3>
+                  <p
+                    className={`${zone.color} font-mango text-[2rem] font-semibold`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 ${zone.color} rounded-lg`}></div>
-                      <div>
-                        <p className="font-semibold">
-                          Zone {zone.number} - {zone.name}
-                        </p>
-                        <p className="text-sm text-sub">
-                          {zone.percentage[0]}% - {zone.percentage[1]}%
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold">
-                        {zone.min} - {zone.max} W
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
+                    {zone.min} - {zone.max}{" "}
+                    <span className="text-[1rem] font-normal">W</span>
+                  </p>
+                </Card>
+              ))}
+            </div>
           )}
         </TabsContent>
 
@@ -707,7 +781,7 @@ export default function ZonesPage() {
                 onClick={() => saveMetric("css", css, "swimming")}
                 className="w-full bg-cyan-500 hover:bg-cyan-600"
               >
-                Calculer mes zones
+                Enregistrer les zones
               </Button>
 
               {/* Help Section */}
@@ -753,34 +827,26 @@ export default function ZonesPage() {
 
           {/* Zones CSS */}
           {css && parseFloat(css) > 0 && (
-            <Card className="p-6">
-              <h3 className="mb-4">Vos zones de natation</h3>
-              <div className="space-y-3">
-                {calculateZoneValues(css, cssZones)?.map((zone) => (
-                  <div
-                    key={zone.number}
-                    className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg"
+            <div className="flex justify-between gap-6">
+              {calculateZoneValues(css, cssZones)?.map((zone) => (
+                <Card
+                  className={`${zone.bg} flex-1 p-6 border-transparent`}
+                  key={zone.number}
+                >
+                  <p className="subtitle text-gray-400">
+                    Zone{zone.number} - {zone.percentage[0]}%
+                  </p>
+                  <h3>{zone.name}</h3>
+                  <p
+                    className={`${zone.color} font-mango text-[2rem] font-semibold`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 ${zone.color} rounded-lg`}></div>
-                      <div>
-                        <p className="font-semibold">
-                          Zone {zone.number} - {zone.name}
-                        </p>
-                        <p className="text-sm text-sub">
-                          {zone.percentage[0]}% - {zone.percentage[1]}%
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold">
-                        {zone.min} - {zone.max} sec/100m
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
+                    {secToMinSec(parseFloat(zone.min))} -{" "}
+                    {secToMinSec(parseFloat(zone.max))}{" "}
+                    <span className="text-[1rem] font-normal">/100m</span>
+                  </p>
+                </Card>
+              ))}
+            </div>
           )}
         </TabsContent>
       </Tabs>

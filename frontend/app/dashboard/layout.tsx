@@ -14,7 +14,7 @@ import { supabase } from "@/lib/supabase";
 import { User } from "@supabase/supabase-js";
 import { Calendar, Dumbbell, Home, LogOut, Target } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function DashboardLayout({
@@ -23,6 +23,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,31 +92,40 @@ export default function DashboardLayout({
     <div className="min-h-screen bg-neutral-50">
       {/* Sidebar */}
       <aside className="bg-neutral-900 text-white px-24">
-        <div className="flex flex-row h-full">
+        <div className="flex flex-row h-full gap-10 py-4">
           {/* Logo */}
-          <div className="py-6 border-b border-neutral-800 flex items-center">
+          <div className="flex items-center">
             <img src="/logo/TrainerTracker.png" alt="TriZone" />
           </div>
 
           {/* Navigation */}
-          <nav className="flex flex-1 p-4">
+          <nav className="flex flex-1 gap-5">
             {navigation.map((item) => {
               const Icon = item.icon;
+              const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="flex items-center gap-3 px-4 rounded-lg hover:bg-neutral-800 transition-smooth"
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-smooth relative hover:bg-neutral-800 ${
+                    isActive ? "text-accent-500" : "text-white"
+                  }`}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span className="font-medium">{item.name}</span>
+                  <Icon className="w-4 h-5" />
+                  <span className="uppercase font-mango text-[20px] tracking-widest">
+                    {item.name}
+                  </span>
+                  {/* Bordure jaune sur la page active */}
+                  {isActive && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-500"></span>
+                  )}
                 </Link>
               );
             })}
           </nav>
 
           {/* User Menu */}
-          <div className="py-4 border-t border-neutral-800">
+          <div className="py-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

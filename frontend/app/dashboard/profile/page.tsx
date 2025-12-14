@@ -103,17 +103,25 @@ export default function ProfilePage() {
           updated_at: new Date().toISOString(),
         });
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error("Erreur Supabase profileError:", profileError);
+        throw profileError;
+      }
 
       toast({
         title: "Profil mis à jour",
         description: "Vos informations ont été sauvegardées avec succès.",
       });
     } catch (error: any) {
-      console.error("Erreur lors de la mise à jour du profil:", error);
+      console.error("Erreur complète:", error);
+      console.error("Message:", error.message);
+      console.error("Details:", error.details);
+      console.error("Hint:", error.hint);
+      console.error("Code:", error.code);
+
       toast({
         title: "Erreur",
-        description: error.message || "Une erreur est survenue lors de la mise à jour",
+        description: error.message || error.hint || "Une erreur est survenue lors de la mise à jour",
         variant: "destructive",
       });
     } finally {
