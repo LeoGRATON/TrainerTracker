@@ -132,6 +132,44 @@ const ftpZones: Zone[] = [
   },
 ];
 
+const pcZones: Zone[] = [
+  {
+    number: 1,
+    name: "Récupération",
+    percentage: [1, 50],
+    color: "text-blue-500",
+    bg: "bg-blue-500/10",
+  },
+  {
+    number: 2,
+    name: "Endurance",
+    percentage: [51, 70],
+    color: "text-green-500",
+    bg: "bg-green-500/10",
+  },
+  {
+    number: 3,
+    name: "Tempo",
+    percentage: [71, 85],
+    color: "text-yellow-500",
+    bg: "bg-yellow-500/10",
+  },
+  {
+    number: 4,
+    name: "Seuil",
+    percentage: [86, 100],
+    color: "text-orange-500",
+    bg: "bg-orange-500/10",
+  },
+  {
+    number: 5,
+    name: "Anaérobie",
+    percentage: [101, 120],
+    color: "text-red-500",
+    bg: "bg-red-500/10",
+  },
+];
+
 const cssZones: Zone[] = [
   {
     number: 1,
@@ -185,8 +223,10 @@ export default function ZonesPage() {
   // FTP/PC
   const [metricType, setMetricType] = useState<"ftp" | "pc">("ftp");
   const [ftp, setFtp] = useState("");
+  const [pc, setPc] = useState("");
   const [showFtpHelp, setShowFtpHelp] = useState(false);
   const [ftpCalculated, setFtpCalculated] = useState(false);
+  const [pcCalculated, setPcCalculated] = useState(false);
 
   // CSS
   const [css, setCss] = useState("");
@@ -204,36 +244,79 @@ export default function ZonesPage() {
     if (session) {
       setUserId(session.user.id);
 
-      // Charger les métriques existantes
-      const { data } = await supabase
+      // Charger la dernière métrique VMA
+      const { data: vmaData } = await supabase
         .from("metrics")
         .select("*")
         .eq("user_id", session.user.id)
+        .eq("metric_type", "vma")
         .order("created_at", { ascending: false })
-        .limit(3);
+        .limit(1)
+        .single();
 
-      if (data) {
-        const vmaMetric = data.find((m) => m.metric_type === "vma");
-        const fcmaxMetric = data.find((m) => m.metric_type === "fcmax");
-        const ftpMetric = data.find((m) => m.metric_type === "ftp");
-        const cssMetric = data.find((m) => m.metric_type === "css");
+      if (vmaData) {
+        setVma(vmaData.value.toString());
+        setVmaCalculated(true);
+      }
 
-        if (vmaMetric) {
-          setVma(vmaMetric.value.toString());
-          setVmaCalculated(true);
-        }
-        if (fcmaxMetric) {
-          setFcmax(fcmaxMetric.value.toString());
-          setFcmaxCalculated(true);
-        }
-        if (ftpMetric) {
-          setFtp(ftpMetric.value.toString());
-          setFtpCalculated(true);
-        }
-        if (cssMetric) {
-          setCss(cssMetric.value.toString());
-          setCssCalculated(true);
-        }
+      // Charger la dernière métrique FC max
+      const { data: fcmaxData } = await supabase
+        .from("metrics")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .eq("metric_type", "fcmax")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (fcmaxData) {
+        setFcmax(fcmaxData.value.toString());
+        setFcmaxCalculated(true);
+      }
+
+      // Charger la dernière métrique FTP
+      const { data: ftpData } = await supabase
+        .from("metrics")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .eq("metric_type", "ftp")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (ftpData) {
+        setFtp(ftpData.value.toString());
+        setFtpCalculated(true);
+      }
+
+      // Charger la dernière métrique PC
+      const { data: pcData } = await supabase
+        .from("metrics")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .eq("metric_type", "pc")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (pcData) {
+        setPc(pcData.value.toString());
+        setPcCalculated(true);
+      }
+
+      // Charger la dernière métrique CSS
+      const { data: cssData } = await supabase
+        .from("metrics")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .eq("metric_type", "css")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (cssData) {
+        setCss(cssData.value.toString());
+        setCssCalculated(true);
       }
     }
   };
@@ -259,13 +342,10 @@ export default function ZonesPage() {
       else if (type === "ftp" || type === "pc") unit = "watts";
       else if (type === "css") unit = "sec/100m";
 
-      // Pour PC, on sauvegarde comme FTP car c'est la même unité (watts)
-      const metricTypeForDB = type === "pc" ? "ftp" : type;
-
       // Sauvegarder la métrique
       console.log("Tentative de sauvegarde métrique:", {
         user_id: userId,
-        metric_type: metricTypeForDB,
+        metric_type: type,
         value: parseFloat(value),
         discipline,
         unit,
@@ -276,7 +356,7 @@ export default function ZonesPage() {
         .from("metrics")
         .insert({
           user_id: userId,
-          metric_type: metricTypeForDB,
+          metric_type: type,
           value: parseFloat(value),
           discipline,
           unit,
@@ -285,6 +365,10 @@ export default function ZonesPage() {
 
       if (metricError) {
         console.error("Erreur insertion métrique:", metricError);
+        console.error("Message d'erreur:", metricError.message);
+        console.error("Code d'erreur:", metricError.code);
+        console.error("Details:", metricError.details);
+        console.error("Hint:", metricError.hint);
         throw metricError;
       }
 
@@ -293,7 +377,8 @@ export default function ZonesPage() {
       // Calculer et sauvegarder les zones
       let zones = vmaZones;
       if (type === "fcmax") zones = fcmaxZones;
-      else if (type === "ftp" || type === "pc") zones = ftpZones;
+      else if (type === "ftp") zones = ftpZones;
+      else if (type === "pc") zones = pcZones;
       else if (type === "css") zones = cssZones;
 
       const baseValue = parseFloat(value);
@@ -343,7 +428,8 @@ export default function ZonesPage() {
 
       if (type === "vma") setVmaCalculated(true);
       if (type === "fcmax") setFcmaxCalculated(true);
-      if (type === "ftp" || type === "pc") setFtpCalculated(true);
+      if (type === "ftp") setFtpCalculated(true);
+      if (type === "pc") setPcCalculated(true);
       if (type === "css") setCssCalculated(true);
     } catch (error: any) {
       console.error("Erreur lors de la sauvegarde:", error);
@@ -645,22 +731,32 @@ export default function ZonesPage() {
               </div>
 
               <div>
-                <Label htmlFor="ftp">
+                <Label htmlFor="power">
                   Ma {metricType === "ftp" ? "FTP" : "Puissance Critique"}{" "}
                   (watts)
                 </Label>
                 <Input
-                  id="ftp"
+                  id="power"
                   type="number"
-                  value={ftp}
-                  onChange={(e) => setFtp(e.target.value)}
+                  value={metricType === "ftp" ? ftp : pc}
+                  onChange={(e) =>
+                    metricType === "ftp"
+                      ? setFtp(e.target.value)
+                      : setPc(e.target.value)
+                  }
                   placeholder="250"
                   className="mt-2"
                 />
               </div>
 
               <Button
-                onClick={() => saveMetric(metricType, ftp, "cycling")}
+                onClick={() =>
+                  saveMetric(
+                    metricType,
+                    metricType === "ftp" ? ftp : pc,
+                    "cycling"
+                  )
+                }
                 className="w-full bg-blue-500 hover:bg-blue-600"
               >
                 Enregistrer les zones
@@ -721,10 +817,14 @@ export default function ZonesPage() {
             </div>
           </Card>
 
-          {/* Zones FTP */}
-          {ftp && parseFloat(ftp) > 0 && (
+          {/* Zones FTP/PC */}
+          {((metricType === "ftp" && ftp && parseFloat(ftp) > 0) ||
+            (metricType === "pc" && pc && parseFloat(pc) > 0)) && (
             <div className="flex justify-between gap-6">
-              {calculateZoneValues(ftp, ftpZones)?.map((zone) => (
+              {calculateZoneValues(
+                metricType === "ftp" ? ftp : pc,
+                metricType === "ftp" ? ftpZones : pcZones
+              )?.map((zone) => (
                 <Card
                   className={`${zone.bg} flex-1 p-6 border-transparent`}
                   key={zone.number}
